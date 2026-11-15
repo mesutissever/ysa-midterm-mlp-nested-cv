@@ -1,0 +1,13 @@
+{
+  "student_last5": 29015,
+  "base_seed": 31041,
+  "derivation": "base_seed + offset",
+  "split": 31041,
+  "outer_cv": 31042,
+  "inner_cv": 31043,
+  "early_stop_split": 31044,
+  "random_search": 31045,
+  "torch_init": 31046,
+  "final_seeds": [31046, 31146, 31246],
+  "bootstrap": 31047
+}
