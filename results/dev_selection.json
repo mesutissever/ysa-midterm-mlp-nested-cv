@@ -1,0 +1,26 @@
+{
+  "manual_best": "M2",
+  "random_best": "R4",
+  "final": "M2",
+  "final_procedure": "manual_search",
+  "final_dev_inner_mean_AP": 0.44077544285653764,
+  "final_dev_inner_sd_AP": 0.045598844576440145,
+  "final_config": {
+    "code": "M2",
+    "optimizer": "adam",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true,
+    "purpose": "Optimizer etkisi (AdamW -> Adam)"
+  },
+  "rule": "Tüm development inner CV (3 kat) mean AP en yüksek; eşitlikte n_params küçük, sonra kod sırası",
+  "total_runtime_s": 172.26560179993976
+}
