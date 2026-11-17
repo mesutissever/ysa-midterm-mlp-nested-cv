@@ -163,6 +163,10 @@ Kesin değerler her eğitimde koddan hesaplanıp kaydedilmektedir.
 | İzlenen metrik | Early-stop alt kümesinde BCE kaybı |
 | HP seçim metriği | İç CV `average_precision_score` (AP) |
 
+**Optimizer'lar.** SGD + Momentum (0,9), tek bir global öğrenme oranıyla gradyan yönünde ilerler ve önceki adımların ivmesini kullanır; öğrenme oranına en duyarlı yöntemdir. Adam, gradyanların birinci ve ikinci momentlerini kullanarak her parametre için uyarlamalı adım büyüklüğü hesaplar; weight decay L2 cezası olarak gradyana eklendiğinden uyarlamalı ölçeklemeden etkilenir. AdamW aynı uyarlamalı güncellemeyi kullanır, ancak weight decay'i gradyandan ayrık (decoupled) biçimde doğrudan ağırlıklara uygular (Loshchilov ve Hutter, 2019). M1 (AdamW) ile M2 (Adam) karşılaştırması bu farkı ölçer.
+
+**Diğer ayrıntılar.** Ağırlıklar PyTorch'un varsayılan başlangıcıyla (Kaiming-uniform) ilklendirilmiştir. Erken durdurmada iyileşme eşiği `min_delta = 0`'dır; planlayıcı PyTorch'un varsayılan eşiğini kullanır. Sınıf ağırlıklandırması (class weight) M1–M6 tanımlarında bulunmadığından ve tek-faktör karşılaştırmayı bozacağından uygulanmamıştır. Fit/early-stop ayrımı tüm adaylarda aynı seed (31044) ile yapılır; böylece adaylar aynı katta aynı alt kümeleri görür. Tüm eğitimler CPU üzerinde yapılmıştır. Early stopping tetiklenmeden 150 epoch'a ulaşan eğitimler "yakınsama uyarısı", sonlu olmayan kayıp üreten eğitimler "başarısız" olarak kaydedilir ve sonuçlardan çıkarılmaz.
+
 Planlayıcı her epoch sonunda early-stop alt kümesindeki doğrulama kaybıyla güncellenir. Erken durdurma ve öğrenme oranı düşürme aynı alt kümeyi izler; iç CV doğrulama katı bu amaçla kullanılmaz. Erken durdurmada AP yerine BCE kaybı kullanılmıştır. BCE kaybı epoch'tan epoch'a daha düzgün değişir ve olasılık kalibrasyonunu da yansıtır. AP ise hiperparametre seçiminin birincil metriği olarak korunmuştur. Her eğitimde eğitim kaybı, iç doğrulama kaybı, epoch bazlı öğrenme oranı, en iyi epoch, süre ve uyarılar CSV olarak kaydedilir.
 
 Tekrarlanabilirlik için her eğitimden önce Python, NumPy ve PyTorch seed'leri ayarlanır ve deterministik algoritmalar etkinleştirilir.
