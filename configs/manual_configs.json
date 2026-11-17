@@ -1,0 +1,99 @@
+{
+  "M1": {
+    "code": "M1",
+    "optimizer": "adamw",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true,
+    "purpose": "Temel manuel konfigürasyon"
+  },
+  "M2": {
+    "code": "M2",
+    "optimizer": "adam",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true,
+    "purpose": "Optimizer etkisi (AdamW -> Adam)"
+  },
+  "M3": {
+    "code": "M3",
+    "optimizer": "sgd",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true,
+    "purpose": "Optimizer etkisi (AdamW -> SGD+Momentum 0.9)"
+  },
+  "M4": {
+    "code": "M4",
+    "optimizer": "adamw",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "minmax",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true,
+    "purpose": "Ölçekleme etkisi (Standard -> MinMax)"
+  },
+  "M5": {
+    "code": "M5",
+    "optimizer": "adamw",
+    "hidden": [
+      64,
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true,
+    "purpose": "Mimari etkisi ((32,) -> (64,32))"
+  },
+  "M6": {
+    "code": "M6",
+    "optimizer": "adamw",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": false,
+    "purpose": "LR düşürme etkisi (scheduler kapalı)"
+  }
+}

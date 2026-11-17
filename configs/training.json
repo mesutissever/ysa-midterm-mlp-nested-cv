@@ -1,0 +1,35 @@
+{
+  "max_epochs": 150,
+  "early_stopping": {
+    "patience": 15,
+    "restore_best_weights": true,
+    "min_delta": 0.0,
+    "monitor": "internal validation BCE loss (mode=min)",
+    "monitor_fraction": 0.15,
+    "monitor_split": "stratified"
+  },
+  "lr_scheduler": {
+    "name": "ReduceLROnPlateau",
+    "mode": "min",
+    "factor": 0.5,
+    "patience": 5,
+    "min_lr": 1e-05
+  },
+  "sgd_momentum": 0.9,
+  "loss": "BCEWithLogitsLoss",
+  "output": "single logit + sigmoid",
+  "outer_cv": {
+    "name": "StratifiedKFold",
+    "n_splits": 3,
+    "shuffle": true
+  },
+  "inner_cv": {
+    "name": "StratifiedKFold",
+    "n_splits": 3,
+    "shuffle": true
+  },
+  "selection_metric": "average_precision_score (AP), inner CV mean",
+  "threshold": 0.5,
+  "class_weight": null,
+  "device": "cpu"
+}

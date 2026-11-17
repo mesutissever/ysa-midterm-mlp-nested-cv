@@ -221,7 +221,18 @@ Manuel adaylar, H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edece
 | Dropout | 0,0, 0,2 |
 | Aykırı değer kırpma | Yok, eğitim katında öğrenilmiş (1.–99. yüzdelik) |
 
-**Tablo 5b.** Örneklenen R1–R6 adayları ve iç CV sonuçları. [SONUÇ — `results/random_search_results.csv`]
+**Tablo 5b.** Örneklenen R1–R6 adayları (tek `RandomState(31045)` akışı, sırayla SGD → Adam → AdamW; planlayıcı tüm adaylarda açık). Adaylar `configs/random_configs.json` dosyasına yazılmış ve nested CV'den önce commit edilmiştir; örneklenen hiçbir aday sonradan değiştirilmemiştir.
+
+| Kod | Optimizer | Gizli katmanlar | Aktivasyon | LR | WD | Batch | Scaler | Dropout | Kırpma |
+|---|---|---|---|---|---|---|---|---|---|
+| R1 | SGD+M | (16,) | ReLU | 0,02737 | 1e-5 | 64 | MinMax | 0,2 | Yok |
+| R2 | SGD+M | (32,) | ReLU | 0,00575 | 1e-5 | 128 | MinMax | 0,0 | Var |
+| R3 | Adam | (64,) | tanh | 0,000459 | 1e-4 | 64 | MinMax | 0,0 | Yok |
+| R4 | Adam | (16,) | ReLU | 0,0007506 | 1e-3 | 32 | Robust | 0,2 | Var |
+| R5 | AdamW | (64,) | ReLU | 0,001886 | 1e-5 | 128 | Robust | 0,2 | Var |
+| R6 | AdamW | (64,) | tanh | 0,0002112 | 1e-5 | 64 | Standard | 0,2 | Var |
+
+**Tablo 5c.** R1–R6 iç CV sonuçları: mean AP ± SD, süre, en iyi epoch. [SONUÇ — `results/random_search_results.csv`]
 
 **Şekil 4.** Örnek bir eğitimin eğitim ve early-stop doğrulama kayıpları ile epoch bazlı öğrenme oranı. [SONUÇ]
 

@@ -1,0 +1,92 @@
+{
+  "R1": {
+    "code": "R1",
+    "optimizer": "sgd",
+    "hidden": [
+      16
+    ],
+    "activation": "relu",
+    "lr": 0.02737,
+    "weight_decay": 1e-05,
+    "batch_size": 64,
+    "scaler": "minmax",
+    "dropout": 0.2,
+    "clip": false,
+    "scheduler": true
+  },
+  "R2": {
+    "code": "R2",
+    "optimizer": "sgd",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.00575,
+    "weight_decay": 1e-05,
+    "batch_size": 128,
+    "scaler": "minmax",
+    "dropout": 0.0,
+    "clip": true,
+    "scheduler": true
+  },
+  "R3": {
+    "code": "R3",
+    "optimizer": "adam",
+    "hidden": [
+      64
+    ],
+    "activation": "tanh",
+    "lr": 0.000459,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "minmax",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true
+  },
+  "R4": {
+    "code": "R4",
+    "optimizer": "adam",
+    "hidden": [
+      16
+    ],
+    "activation": "relu",
+    "lr": 0.0007506,
+    "weight_decay": 0.001,
+    "batch_size": 32,
+    "scaler": "robust",
+    "dropout": 0.2,
+    "clip": true,
+    "scheduler": true
+  },
+  "R5": {
+    "code": "R5",
+    "optimizer": "adamw",
+    "hidden": [
+      64
+    ],
+    "activation": "relu",
+    "lr": 0.001886,
+    "weight_decay": 1e-05,
+    "batch_size": 128,
+    "scaler": "robust",
+    "dropout": 0.2,
+    "clip": true,
+    "scheduler": true
+  },
+  "R6": {
+    "code": "R6",
+    "optimizer": "adamw",
+    "hidden": [
+      64
+    ],
+    "activation": "tanh",
+    "lr": 0.0002112,
+    "weight_decay": 1e-05,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.2,
+    "clip": true,
+    "scheduler": true
+  }
+}
