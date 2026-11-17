@@ -130,10 +130,14 @@ Deney akışı Şekil 1'de özetlenmiştir. Bağımsız test kümesi ayrıldıkt
 Ön işleme, scikit-learn `Pipeline` ve `ColumnTransformer` ile tanımlanmıştır. Tüm `fit` işlemleri yalnızca ilgili MLP ağırlık eğitim alt kümesinde ("fit" alt kümesi) yapılır; early-stop alt kümesine, iç doğrulama katına, dış değerlendirme katına ve teste yalnızca `transform` uygulanır. Öğrenilen parametreler şunlardır: medyan değerleri, kategori sözlüğü, ölçekleyici istatistikleri ve kırpma eşikleri.
 
 - **Sayısal özellikler:** medyan imputation (development verisinde sayısal eksik değer bulunmamaktadır; adım, pipeline'ın genelliği için korunmuştur) → isteğe bağlı yüzdelik kırpma (eşikler fit alt kümesinin 1. ve 99. yüzdeliklerinden öğrenilir) → ölçekleyici.
+- **`pdays` kırpılmaz.** Değerlerin yaklaşık %96'sı "daha önce temas yok" anlamındaki 999 özel kodudur; bu nedenle 99. yüzdelik 999'a, 1. yüzdelik küçük bir değere denk gelir ve kırpma yalnızca gerçek gün değerlerini (0–2) bozar. Bu karar hedef değişkene bakılmadan, değişkenin kodlama yapısına dayanılarak verilmiştir. Kırpma seçeneği açıkken yalnızca diğer sekiz sayısal özelliğe uygulanır.
+- **"unknown" ayrı kategori olarak sabitlenmiştir.** Veri sözlüğüne göre "unknown" bilginin alınamadığını kodlar ve bu durumun kendisi bilgi taşıyabilir. Karar, hedefle ilişkiye bakılarak değil önceden verilmiştir; alternatif (kat-içi en sık sınıfla doldurma) arama uzayı bütçesini aşmamak için değerlendirilmemiş ve sınırlama olarak not edilmiştir. Kategorik adımda yer alan en sık sınıf imputation'ı yalnızca gerçek NaN değerler için güvenlik amacıyla bulunur.
 - **Ölçekleyiciler:** **Standardization** (`StandardScaler`) her özelliği fit alt kümesinin ortalamasını çıkarıp standart sapmasına bölerek z-skoruna dönüştürür, değer aralığını sınırlamaz. **Normalization** (`MinMaxScaler`) değerleri fit alt kümesindeki min–maks aralığına göre [0, 1] aralığına taşır ve aykırı değerlere duyarlıdır. `RobustScaler` medyanı çıkarıp IQR'ye böler; aykırı değerlere karşı daha dayanıklıdır.
 - **Kategorik özellikler:** "unknown" ayrı kategori olarak korunur ve `OneHotEncoder(handle_unknown="ignore")` ile kodlanır. Fit alt kümesinde görülmemiş bir kategori diğer kümelerde sıfır vektörüyle temsil edilir.
 
-One-hot kodlamadan sonra girdi boyutu, fit alt kümesinde gözlenen kategori sayısına bağlıdır. Tüm development verisi için bu boyut 9 sayısal + 52 one-hot = **61**'dir.
+One-hot kodlamadan sonra girdi boyutu, fit alt kümesinde gözlenen kategori sayısına bağlıdır. Tüm development verisi için bu boyut 9 sayısal + 52 one-hot = **61**'dir; nadir kategoriler (ör. `education = illiterate`) bir alt kümede hiç bulunmazsa boyut 60'a düşebilir.
+
+**Sızıntı kontrolü.** `src/preprocessing.py` içindeki otomatik kontrol, (i) ölçekleyici istatistiklerinin yalnızca fit alt kümesinin istatistiklerine eşit olduğunu, (ii) kırpma eşiklerinin fit alt kümesinin yüzdeliklerinden öğrenildiğini ve `pdays`'in kırpılmadığını, (iii) fit alt kümesinde görülmemiş bir kategorinin hata vermeden sıfır vektörle temsil edildiğini doğrulamaktadır.
 
 ### 3.3 MLP mimarisi ve eğitim
 
