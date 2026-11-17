@@ -201,7 +201,18 @@ Manuel adaylar, H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edece
 | M5 | M1, gizli katmanlar = (64,32) | Mimari etkisi |
 | M6 | M1, planlayıcı kapalı | LR düşürme etkisi |
 
-**Tablo 4b.** Manuel adayların iç CV sonuçları (dış katlar ve tam development). Sütunlar: mean AP ± SD, süre, en iyi epoch. [SONUÇ — `results/manual_search_results.csv`]
+**Tablo 4b.** Manuel adayların iç CV mean AP değerleri (her dış katın outer-train'i içinde ve tüm development üzerinde, 3 iç kat) ile tüm development iç CV'sine ait SD, eğitim süresi ve epoch bilgileri. Kaynak: `results/manual_search_results.csv`.
+
+| Kod | Dış kat 1 | Dış kat 2 | Dış kat 3 | Development mean AP ± SD | ROC-AUC | Süre (sn/eğitim) | En iyi / durulan epoch | Uyarı* |
+|---|---|---|---|---|---|---|---|---|
+| M1 | 0,4625 | 0,3670 | 0,4120 | 0,4394 ± 0,0456 | 0,7751 | 1,06 | 19,7 / 34,7 | 0 |
+| **M2** | 0,4610 | 0,3683 | **0,4136** | **0,4408 ± 0,0456** | 0,7753 | 1,01 | 19,7 / 34,7 | 0 |
+| M3 | 0,4476 | **0,3910** | 0,4022 | 0,4318 ± 0,0413 | 0,7788 | 2,95 | 128,0 / 136,7 | 7 |
+| M4 | 0,4446 | 0,3664 | 0,4017 | 0,4312 ± 0,0370 | 0,7675 | 1,18 | 25,7 / 40,7 | 0 |
+| M5 | **0,4676** | 0,3503 | 0,4089 | 0,4301 ± 0,0406 | 0,7660 | 1,15 | 12,7 / 27,7 | 0 |
+| M6 | 0,4625 | 0,3670 | 0,4089 | 0,4394 ± 0,0456 | 0,7751 | 1,08 | 19,7 / 34,7 | 0 |
+
+\*Uyarı: 12 iç eğitimden (3 dış kat × 3 + development × 3) kaçında early stopping tetiklenmeden 150 epoch'a ulaşıldığı. Kalın: ilgili kapsamda seçilen aday. Başarısız (NaN) eğitim olmamıştır.
 
 ### 4.2 Otomatik arama (R1–R6)
 
@@ -232,21 +243,73 @@ Manuel adaylar, H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edece
 | R5 | AdamW | (64,) | ReLU | 0,001886 | 1e-5 | 128 | Robust | 0,2 | Var |
 | R6 | AdamW | (64,) | tanh | 0,0002112 | 1e-5 | 64 | Standard | 0,2 | Var |
 
-**Tablo 5c.** R1–R6 iç CV sonuçları: mean AP ± SD, süre, en iyi epoch. [SONUÇ — `results/random_search_results.csv`]
+**Tablo 5c.** Otomatik adayların iç CV sonuçları. Kaynak: `results/random_search_results.csv`.
 
-**Şekil 4.** Örnek bir eğitimin eğitim ve early-stop doğrulama kayıpları ile epoch bazlı öğrenme oranı. [SONUÇ]
+| Kod | Dış kat 1 | Dış kat 2 | Dış kat 3 | Development mean AP ± SD | ROC-AUC | Süre (sn/eğitim) | En iyi / durulan epoch | Uyarı* |
+|---|---|---|---|---|---|---|---|---|
+| R1 | 0,4385 | 0,3548 | 0,3932 | 0,4264 ± 0,0558 | 0,7728 | 0,83 | 17,7 / 32,7 | 0 |
+| R2 | 0,4298 | 0,3585 | **0,4149** | 0,4299 ± 0,0337 | 0,7761 | 1,47 | 107,0 / 118,3 | 5 |
+| R3 | 0,4541 | 0,3627 | 0,4072 | 0,4228 ± 0,0334 | 0,7663 | 1,85 | 46,7 / 61,7 | 0 |
+| **R4** | 0,4282 | 0,3541 | 0,3855 | **0,4353 ± 0,0497** | 0,7785 | 3,05 | 38,3 / 53,3 | 0 |
+| R5 | 0,4178 | 0,3543 | 0,4050 | 0,4074 ± 0,0349 | 0,7742 | 0,67 | 17,7 / 32,7 | 0 |
+| R6 | **0,4664** | **0,3771** | 0,4008 | 0,4288 ± 0,0402 | 0,7732 | 2,15 | 47,0 / 62,0 | 0 |
 
-**Şekil 5.** Manuel ve otomatik adayların iç CV AP karşılaştırması. [SONUÇ]
+Tüm deney (150 MLP eğitimi ve referans modeller) CPU üzerinde toplam 172 saniye sürmüştür. Optimizer bazında, SGD adayları (M3, R2) en uzun eğitimleri ve uyarıların tamamını üretmiştir.
+
+**Şekil 4.** Dış kat 1, iç kat 1 için M1, M3, M6 ve development'ta en iyi otomatik aday (R4) eğitim/early-stop doğrulama BCE kayıpları ve epoch bazlı öğrenme oranı. `figures/training_curves.png`
+
+**Şekil 5.** Manuel ve otomatik adayların iç CV mean AP ± SD değerleri (üç dış kat ve tüm development). `figures/search_comparison.png`
+
+### 4.3 Hipotezlerin iç CV sonuçlarına göre değerlendirilmesi
+
+Aşağıdaki karşılaştırmalar tüm development iç CV değerlerine dayanmaktadır. Adaylar arasındaki farkların büyük bölümü kat SD'lerinden (≈0,04–0,05) küçüktür; bu nedenle bulgular eğilim olarak yorumlanmalıdır.
+
+- **H1 (ölçekleme/kırpma): kısmen desteklendi.** MinMaxScaler (M4: 0,4312) StandardScaler'ın (M1: 0,4394) gerisinde kalmıştır. Otomatik aramada RobustScaler + kırpma kullanan R4 en yüksek otomatik skoru (0,4353) verirken aynı kombinasyonu kullanan R5 en düşük skoru (0,4074) vermiştir; kırpma/robust ölçeklemenin tek başına belirleyici olmadığı, diğer hiperparametrelerle etkileştiği görülmektedir.
+- **H2 (optimizer): yakınsama hızı açısından desteklendi, AP açısından zayıf.** LR = 0,001 ile SGD+Momentum (M3) ortalama 128 epoch'ta en iyi noktasına ulaşmış, 12 eğitimin 7'sinde 150 epoch sınırına dayanmış ve Adam/AdamW'ye göre yaklaşık 3 kat uzun sürmüştür; buna karşın AP kaybı küçüktür (0,4318). Daha büyük LR ile SGD (R1, LR = 0,027) 17,7 epoch'ta yakınsamıştır. Adam (M2) ile AdamW (M1) neredeyse aynı sonucu vermiştir; WD = 1e-4 düzeyinde ayrık ve bağlı weight decay arasındaki fark ihmal edilebilir kalmıştır.
+- **H3 (mimari): desteklendi.** (64,32) mimarisi (M5: 0,4301, ≈6.060 parametre) tek katmanlı (32,) mimariye (M1: 0,4394, ≈2.006 parametre) göre kazanç sağlamamış, en iyi epoch'a daha erken (12,7) ulaşarak daha hızlı aşırı öğrenme eğilimi göstermiştir.
+- **H4 (LR planlaması): desteklenmedi.** M6 (planlayıcı kapalı) 12 iç eğitimin 11'inde M1 ile birebir aynı AP'yi vermiştir. Bunun nedeni, ilk öğrenme oranı düşüşünün en iyi epoch'tan sonra gerçekleşmesi ve en iyi ağırlıklar geri yüklendiğinden planlayıcının nihai modele etki etmemesidir. Bu ayarlarda (planlayıcı patience = 5, early stopping patience = 15) ReduceLROnPlateau pratikte etkisiz kalmıştır.
 
 ---
 
 ## 5. Nested CV Bulguları
 
-**Tablo 6.** Dış kat bazlı sonuçlar: manuel arama, otomatik arama, LogisticRegression, Dummy. Her dış katta seçilen aday da gösterilir. [SONUÇ — `results/outer_cv_results.csv`]
+**Tablo 6.** Dış kat bazlı sonuçlar (eşik 0,50). Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kaynak: `results/outer_cv_results.csv`.
 
-**Tablo 7.** Dış CV Mean ± SD (n = 3): AP, ROC-AUC, F1, Sensitivity, Specificity, Balanced Accuracy. [SONUÇ]
+| Dış kat | Yöntem | Seçilen | İç CV AP | AP | ROC-AUC | F1 | Sensitivity | Specificity | TP / FP / FN |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Manuel arama | M5 | 0,4676 | 0,3666 | 0,7500 | 0,2674 | 0,1901 | 0,9714 | 23 / 28 / 98 |
+| 1 | Otomatik arama | R6 | 0,4664 | 0,3739 | 0,7485 | 0,2874 | 0,1983 | 0,9775 | 24 / 22 / 97 |
+| 1 | LogisticRegression | – | – | 0,3915 | 0,7587 | 0,3333 | 0,2397 | 0,9755 | 29 / 24 / 92 |
+| 1 | Dummy | – | – | 0,1101 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 121 |
+| 2 | Manuel arama | M3 | 0,3910 | 0,4554 | 0,7918 | 0,3185 | 0,2083 | 0,9877 | 25 / 12 / 95 |
+| 2 | Otomatik arama | R6 | 0,3771 | 0,4500 | 0,7810 | 0,3855 | 0,2667 | 0,9857 | 32 / 14 / 88 |
+| 2 | LogisticRegression | – | – | 0,4478 | 0,7745 | 0,4192 | 0,2917 | 0,9877 | 35 / 12 / 85 |
+| 2 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
+| 3 | Manuel arama | M2 | 0,4136 | 0,4659 | 0,7987 | 0,3478 | 0,2333 | 0,9867 | 28 / 13 / 92 |
+| 3 | Otomatik arama | R2 | 0,4149 | 0,4290 | 0,7888 | 0,3333 | 0,2250 | 0,9847 | 27 / 15 / 93 |
+| 3 | LogisticRegression | – | – | 0,4207 | 0,7890 | 0,3432 | 0,2417 | 0,9796 | 29 / 20 / 91 |
+| 3 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
 
-[Yorum: arama prosedürlerinin genelleme tahmini, referanslara göre kazanç, dış katlar arasında seçilen adayların tutarlılığı, H1–H4'ün desteklenip desteklenmediği.]
+Dış kat 2'de seçilen M3'ün refit eğitimi 150 epoch sınırına ulaşmıştır (yakınsama uyarısı).
+
+**Tablo 7.** Dış CV Mean ± SD (n = 3, örnek SD). Kaynak: `results/outer_cv_summary_formatted.csv`.
+
+| Yöntem | AP | ROC-AUC | F1 | Sensitivity | Specificity | Balanced Acc. | Precision | Accuracy |
+|---|---|---|---|---|---|---|---|---|
+| Manuel arama | 0,429 ± 0,055 | 0,780 ± 0,026 | 0,311 ± 0,041 | 0,211 ± 0,022 | 0,982 ± 0,009 | 0,596 ± 0,015 | 0,603 ± 0,132 | 0,897 ± 0,010 |
+| Otomatik arama | 0,418 ± 0,039 | 0,773 ± 0,021 | 0,335 ± 0,049 | 0,230 ± 0,034 | 0,983 ± 0,004 | 0,606 ± 0,019 | 0,620 ± 0,089 | 0,900 ± 0,008 |
+| LogisticRegression | 0,420 ± 0,028 | 0,774 ± 0,015 | 0,365 ± 0,047 | 0,258 ± 0,029 | 0,981 ± 0,006 | 0,619 ± 0,018 | 0,628 ± 0,104 | 0,902 ± 0,009 |
+| Dummy (prior) | 0,110 ± 0,000 | 0,500 ± 0,000 | 0,000 ± 0,000 | 0,000 ± 0,000 | 1,000 ± 0,000 | 0,500 ± 0,000 | 0,000 ± 0,000 | 0,890 ± 0,000 |
+
+**Şekil 5b.** Dış CV AP: kat bazlı değerler ve ortalama ± SD. `figures/outer_cv_ap.png`
+
+**Yorum.** Her iki arama prosedürü de Dummy alt sınırının (AP ≈ 0,11) yaklaşık dört katı AP'ye ulaşmıştır; dolayısıyla model anlamlı bir sıralama bilgisi öğrenmektedir. Buna karşın manuel arama (0,429 ± 0,055), otomatik arama (0,418 ± 0,039) ve doğrusal referans LogisticRegression (0,420 ± 0,028) arasındaki AP farkları katlar arası SD'nin çok altındadır; bu veride MLP'nin doğrusal modele karşı belirgin bir üstünlüğü gösterilememiştir. Eşik 0,50'de tüm modeller yüksek özgüllük (≈0,98) fakat düşük duyarlılık (≈0,21–0,26) üretmektedir; bu, dengesiz sınıf yapısında olasılıkların nadiren 0,50'yi aşmasının bir sonucudur. Accuracy değerlerinin (≈0,90) Dummy'nin 0,890'ından neredeyse ayırt edilemez olması, accuracy'nin bu problemde neden birincil metrik olarak kullanılmadığını doğrulamaktadır.
+
+Dış katlarda seçilen adaylar tutarlı değildir: manuel arama sırasıyla M5, M3 ve M2'yi; otomatik arama R6, R6 ve R2'yi seçmiştir. İç CV'de adaylar arasındaki farkların küçük olması, seçimin kat değişimine duyarlı olmasına yol açmaktadır. Ayrıca dış kat 1'de iç CV AP değerleri (≈0,47) outer-eval AP'sinden (≈0,37) belirgin biçimde yüksektir; seçilen adayın iç CV skoru, seçim yanlılığı nedeniyle iyimserdir ve bu durum nested CV kullanılmasının gerekçesini somut olarak göstermektedir. Dış kat sonuçları hiçbir konfigürasyonun değiştirilmesinde veya nihai stratejinin seçiminde kullanılmamıştır.
+
+### 5.1 Tüm development üzerinde nihai seçim
+
+Önceden tanımlanan kural gereği (tüm development iç CV mean AP en yüksek aday), manuel aramada **M2** (0,4408 ± 0,0456), otomatik aramada **R4** (0,4353 ± 0,0497) en iyi olmuş; nihai konfigürasyon olarak **M2** seçilmiştir: Adam, (32,), ReLU, LR = 0,001, WD = 1e-4, batch 64, StandardScaler, dropout 0, kırpma yok, planlayıcı açık. M2 ile M1 arasındaki fark (0,0014) çok küçüktür; seçim, kuralın mekanik uygulamasıdır ve M2'nin M1'den üstün olduğu biçiminde yorumlanmamalıdır. Kaynak: `results/dev_selection.json`.
 
 ---
 
