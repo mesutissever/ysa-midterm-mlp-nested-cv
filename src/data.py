@@ -97,6 +97,13 @@ def get_dev_test(path=DATA_PATH, split_path=RESULTS_DIR / "dataset_split.csv"):
     return df.loc[dev_idx], df.loc[test_idx]
 
 
+def get_test_features(path=DATA_PATH, split_path=RESULTS_DIR / "dataset_split.csv"):
+    """Test kümesinin YALNIZCA özelliklerini döndürür (etiket sütunu çıkarılmış).
+    Kilitli tahmin aşamasında kullanılır; test etiketleri bu fonksiyonla okunmaz."""
+    _, df_test = get_dev_test(path, split_path)
+    return df_test.drop(columns=TARGET)
+
+
 if __name__ == "__main__":
     seeds = load_seeds()
     raw = load_raw()
