@@ -1,0 +1,15 @@
+feature,level,n_pos,n_FN,FN_rate
+poutcome,failure,17,17,1.0
+poutcome,nonexistent,51,51,1.0
+poutcome,success,22,2,0.09090909090909091
+contact,cellular,74,55,0.7432432432432432
+contact,telephone,16,15,0.9375
+month,apr,6,6,1.0
+month,aug,14,8,0.5714285714285714
+month,jul,6,6,1.0
+month,jun,20,19,0.95
+month,mar,2,0,0.0
+month,may,20,17,0.85
+month,nov,12,8,0.6666666666666666
+month,oct,3,3,1.0
+month,sep,7,3,0.42857142857142855

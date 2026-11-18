@@ -47,6 +47,14 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def assert_not_locked():
+    """Kilit commit'i atıldıktan sonra Bölüm A (yeniden eğitim / kilitli dosyanın üzerine yazma) engellenir."""
+    code, _ = _git("ls-files", "--error-unmatch", "results/test_predictions_locked.csv")
+    if code == 0:
+        raise RuntimeError("Kilitli test tahminleri zaten commit edilmiş. Bölüm A yeniden çalıştırılamaz; "
+                           "doğrudan Bölüm B'ye geçin.")
+
+
 # ----------------------------------------------------------------------------- kayıt yardımcıları
 def learned_stats(pre):
     """Fit edilmiş ColumnTransformer'dan okunabilir dönüşüm istatistikleri."""
@@ -73,6 +81,7 @@ def learned_stats(pre):
 
 
 def write_final_hyperparameters(dev_sel, seeds):
+    assert_not_locked()
     obj = dict(
         selected_code=dev_sel["final"], procedure=dev_sel["final_procedure"],
         config={k: v for k, v in dev_sel["final_config"].items() if k != "purpose"},
@@ -97,6 +106,7 @@ def write_final_hyperparameters(dev_sel, seeds):
 # ----------------------------------------------------------------------------- nihai eğitim
 def train_final_models(df_dev, config, seeds, verbose=True):
     """Nihai konfigürasyonu 3 seed ile ve LogReg'i tüm development üzerinde eğitir, diske kaydeder."""
+    assert_not_locked()
     MODELS_DIR.mkdir(exist_ok=True)
     X, y = split_xy(df_dev)
     results, rows, hists = {}, [], []
@@ -128,6 +138,7 @@ def train_final_models(df_dev, config, seeds, verbose=True):
 # ----------------------------------------------------------------------------- kilitli tahminler
 def write_locked_predictions(results, logreg, X_test, seeds):
     """Etiketsiz test tahminlerini yazar ve bir manifest (sha256, git durumu) üretir."""
+    assert_not_locked()
     assert TARGET not in X_test.columns, "Test özelliklerinde etiket sütunu olmamalı!"
     out = pd.DataFrame({"orig_index": X_test.index})
     for s in seeds["final_seeds"]:
