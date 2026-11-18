@@ -1,0 +1,43 @@
+{
+  "selected_code": "M2",
+  "procedure": "manual_search",
+  "config": {
+    "code": "M2",
+    "optimizer": "adam",
+    "hidden": [
+      32
+    ],
+    "activation": "relu",
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "scaler": "standard",
+    "dropout": 0.0,
+    "clip": false,
+    "scheduler": true
+  },
+  "selection_rule": "Tüm development inner CV (3 kat) mean AP en yüksek; eşitlikte n_params küçük, sonra kod sırası",
+  "dev_inner_cv_mean_AP": 0.44077544285653764,
+  "dev_inner_cv_sd_AP": 0.045598844576440145,
+  "manual_best": "M2",
+  "random_best": "R4",
+  "threshold": 0.5,
+  "threshold_note": "Varsayılan 0.50; eşik araması yapılmamıştır.",
+  "primary_seed": 31046,
+  "stability_seeds": [
+    31046,
+    31146,
+    31246
+  ],
+  "early_stop_split_seed": 31044,
+  "training_data": "Tüm development (3.295) -> %85 fit / %15 early-stop (stratified)",
+  "versions": {
+    "python": "3.13.1",
+    "torch": "2.15.0+cpu",
+    "sklearn": "1.9.1",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "code_commit": "8a81da2b76b84c66931fb8e6d960c00f3b834416",
+  "src_or_configs_uncommitted": false,
+  "created_utc": "2026-11-17T16:48:59+00:00"
+}

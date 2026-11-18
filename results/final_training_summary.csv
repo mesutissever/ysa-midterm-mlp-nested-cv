@@ -1,0 +1,4 @@
+seed,primary,n_params,n_inputs,n_fit,n_es,best_epoch,stopped_epoch,early_stopped,best_val_loss,final_lr,train_time_s,failed,warnings
+31046,True,2017,61,2800,495,20,35,True,0.2627671957015991,0.00025,20.380030300002545,False,
+31146,False,2017,61,2800,495,18,33,True,0.2604910135269165,0.00025,1.5439834999851882,False,
+31246,False,2017,61,2800,495,18,33,True,0.2661934494972229,0.00025,1.565299000008963,False,

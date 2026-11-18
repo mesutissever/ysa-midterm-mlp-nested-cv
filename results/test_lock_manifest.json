@@ -1,0 +1,22 @@
+{
+  "file": "results/test_predictions_locked.csv",
+  "sha256": "0acd5903bfe0e4b90fa04838ac78b808e799f1c34158ef998ab22058f8b451d1",
+  "n_rows": 824,
+  "columns": [
+    "orig_index",
+    "prob_mlp_s31046",
+    "pred_mlp_s31046",
+    "prob_mlp_s31146",
+    "pred_mlp_s31146",
+    "prob_mlp_s31246",
+    "pred_mlp_s31246",
+    "prob_logreg",
+    "pred_logreg"
+  ],
+  "primary_model": "mlp_s31046",
+  "threshold": 0.5,
+  "contains_labels": false,
+  "code_commit": "8a81da2b76b84c66931fb8e6d960c00f3b834416",
+  "src_or_configs_uncommitted": false,
+  "created_utc": "2026-11-17T16:49:26+00:00"
+}
