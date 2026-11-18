@@ -6,7 +6,11 @@ Kurallar (ödev Bölüm 2-3):
 - "duration" görüşme öncesi bilinmediği için modelden çıkarılır.
 - "unknown" kategorileri NaN'a çevrilmez; pdays=999 silinmez/değiştirilmez.
 """
+import hashlib
+import io
 import json
+import urllib.request
+import zipfile
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +23,8 @@ TARGET = "y"
 DROP_COLS = ["duration"]
 
 EXPECTED_SHAPE = (4119, 21)
+UCI_URL = "https://archive.ics.uci.edu/static/public/222/bank+marketing.zip"
+EXPECTED_SHA256 = "7e59cf650004d65d1c9d6b08553bad2ee9a9ad70d594f536e3c584ee6ed5df50"
 
 
 def load_seeds(path=ROOT / "configs" / "seeds.json"):
@@ -26,9 +32,25 @@ def load_seeds(path=ROOT / "configs" / "seeds.json"):
         return json.load(f)
 
 
+def ensure_data(path=DATA_PATH):
+    """Veri yoksa UCI'den indirir (bank+marketing.zip -> bank-additional.zip -> bank-additional.csv)
+    ve sha256 ile kullanılan dosyanın aynısı olduğunu doğrular."""
+    path = Path(path)
+    if not path.exists():
+        print(f"{path.name} bulunamadı, UCI'den indiriliyor: {UCI_URL}")
+        with urllib.request.urlopen(UCI_URL, timeout=120) as r:
+            outer = zipfile.ZipFile(io.BytesIO(r.read()))
+        inner = zipfile.ZipFile(io.BytesIO(outer.read("bank-additional.zip")))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(inner.read("bank-additional/bank-additional.csv"))
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    assert digest == EXPECTED_SHA256, f"Veri dosyası beklenen sürüm değil (sha256={digest})"
+    return path
+
+
 def load_raw(path=DATA_PATH):
     """Ham CSV'yi okur ve yapısal kontrolleri yapar (hiçbir değişiklik yapmaz)."""
-    df = pd.read_csv(path, sep=";")
+    df = pd.read_csv(ensure_data(path), sep=";")
     assert df.shape == EXPECTED_SHAPE, f"Beklenen {EXPECTED_SHAPE}, gelen {df.shape}"
     labels = set(df[TARGET].unique())
     assert labels == {"yes", "no"}, f"Beklenmeyen hedef etiketleri: {labels}"

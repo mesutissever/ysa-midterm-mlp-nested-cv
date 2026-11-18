@@ -22,7 +22,8 @@ import torch
 
 from src.data import TARGET
 from src.nested_cv import fit_baselines, split_xy
-from src.train import predict_proba, train_mlp
+from src.model import MLP
+from src.train import TrainResult, predict_proba, train_mlp
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
@@ -47,12 +48,13 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def assert_not_locked():
-    """Kilit commit'i atıldıktan sonra Bölüm A (yeniden eğitim / kilitli dosyanın üzerine yazma) engellenir."""
+def is_locked():
+    """Kilitli test tahminleri git'e commit edilmiş mi?"""
     code, _ = _git("ls-files", "--error-unmatch", "results/test_predictions_locked.csv")
-    if code == 0:
-        raise RuntimeError("Kilitli test tahminleri zaten commit edilmiş. Bölüm A yeniden çalıştırılamaz; "
-                           "doğrudan Bölüm B'ye geçin.")
+    return code == 0
+
+
+LOCK_MSG = "Kilit commit'i mevcut: yeniden eğitim/yazma yapılmıyor, kayıtlı {} diskten okunuyor."
 
 
 # ----------------------------------------------------------------------------- kayıt yardımcıları
@@ -81,7 +83,10 @@ def learned_stats(pre):
 
 
 def write_final_hyperparameters(dev_sel, seeds):
-    assert_not_locked()
+    if is_locked():                                   # Bölüm A tekrar çalıştırılırsa kayıt korunur
+        print(LOCK_MSG.format("final_hyperparameters.json"))
+        with open(RESULTS_DIR / "final_hyperparameters.json", encoding="utf-8") as f:
+            return json.load(f)
     obj = dict(
         selected_code=dev_sel["final"], procedure=dev_sel["final_procedure"],
         config={k: v for k, v in dev_sel["final_config"].items() if k != "purpose"},
@@ -106,7 +111,9 @@ def write_final_hyperparameters(dev_sel, seeds):
 # ----------------------------------------------------------------------------- nihai eğitim
 def train_final_models(df_dev, config, seeds, verbose=True):
     """Nihai konfigürasyonu 3 seed ile ve LogReg'i tüm development üzerinde eğitir, diske kaydeder."""
-    assert_not_locked()
+    if is_locked():
+        print(LOCK_MSG.format("modeller"))
+        return load_final_models(config, seeds)
     MODELS_DIR.mkdir(exist_ok=True)
     X, y = split_xy(df_dev)
     results, rows, hists = {}, [], []
@@ -135,10 +142,31 @@ def train_final_models(df_dev, config, seeds, verbose=True):
     return results, logreg, summary
 
 
+def load_final_models(config, seeds):
+    """Kaydedilmiş nihai modelleri (ağırlık + ön işleme), LogReg'i ve eğitim özetini yükler."""
+    summary = pd.read_csv(RESULTS_DIR / "final_training_summary.csv")
+    hist = pd.read_csv(RESULTS_DIR / "final_training_histories.csv")
+    results = {}
+    for s in seeds["final_seeds"]:
+        sm = summary.set_index("seed").loc[s].to_dict()
+        model = MLP(int(sm["n_inputs"]), hidden=tuple(config["hidden"]), activation=config["activation"],
+                    dropout=config["dropout"])
+        model.load_state_dict(torch.load(MODELS_DIR / f"mlp_seed{s}.pt", weights_only=True))
+        model.eval()
+        results[s] = TrainResult(model=model, preprocessor=joblib.load(MODELS_DIR / f"preprocessor_seed{s}.joblib"),
+                                 history=hist[hist.seed == s].drop(columns="seed"), summary=sm)
+    return results, joblib.load(MODELS_DIR / "logreg.joblib"), summary
+
+
 # ----------------------------------------------------------------------------- kilitli tahminler
 def write_locked_predictions(results, logreg, X_test, seeds):
     """Etiketsiz test tahminlerini yazar ve bir manifest (sha256, git durumu) üretir."""
-    assert_not_locked()
+    if is_locked():
+        print(LOCK_MSG.format("kilitli tahminler"))
+        with open(RESULTS_DIR / "test_lock_manifest.json", encoding="utf-8") as f:
+            manifest = json.load(f)
+        assert manifest["sha256"] == sha256(LOCKED_PATH), "Kilitli dosya commit'ten sonra değişmiş!"
+        return pd.read_csv(LOCKED_PATH), manifest
     assert TARGET not in X_test.columns, "Test özelliklerinde etiket sütunu olmamalı!"
     out = pd.DataFrame({"orig_index": X_test.index})
     for s in seeds["final_seeds"]:
