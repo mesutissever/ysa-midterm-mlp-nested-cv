@@ -1,9 +1,9 @@
 # Banka Pazarlama Verisinde MLP ile İkili Sınıflandırma: Kat-İçi Ön İşleme, Manuel ve Otomatik Hiperparametre Araması ve İç İçe Çapraz Doğrulama
 
 **Ders:** Yapay Sinir Ağları (Yüksek Lisans) — Ara Sınav Projesi
-**Öğrenci:** [Ad Soyad], [Öğrenci No]
+**Öğrenci:** Mesut İşsever, 264329015
 **GitHub:** https://github.com/mesutissever/ysa-midterm-mlp-nested-cv
-**Tarih:** [Teslim tarihi]
+**Tarih:** 30 Kasım 2026
 
 ---
 
@@ -17,9 +17,9 @@ Bu çalışmada UCI Bank Marketing veri setinin `bank-additional.csv` sürümün
 
 ## 1. Giriş
 
-Çok Katmanlı Algılayıcı (Multi-Layer Perceptron, MLP), doğrusal dönüşümlerin doğrusal olmayan aktivasyon fonksiyonlarıyla art arda uygulandığı ileri beslemeli bir yapay sinir ağıdır. Yeterli gizli birim sayısıyla sürekli fonksiyonlara keyfî yakınlıkta yaklaşabilmesi MLP'yi tablo verilerinde güçlü bir aday yapar; ancak bu esneklik, modelin başarısını büyük ölçüde hiperparametre seçimlerine (mimari, optimizer, öğrenme oranı, düzenlileştirme, yığın boyutu) ve girdi ön işlemesine bağımlı kılar. Küçük ve dengesiz veri setlerinde bu duyarlılık daha belirgindir: aşırı parametreli bir ağ kolayca aşırı öğrenebilir, uygunsuz ölçekleme veya öğrenme oranı ise yakınsamayı yavaşlatabilir.
+Çok Katmanlı Algılayıcı (Multi-Layer Perceptron, MLP), doğrusal dönüşümlerin doğrusal olmayan aktivasyon fonksiyonlarıyla art arda uygulandığı ileri beslemeli bir yapay sinir ağıdır. Yeterli gizli birim sayısıyla sürekli fonksiyonlara keyfî yakınlıkta yaklaşabilmesi MLP'yi tablo verilerinde güçlü bir aday yapar; ancak bu esneklik, modelin başarısını büyük ölçüde hiperparametre seçimlerine (mimari, optimizer, öğrenme oranı, düzenlileştirme, yığın boyutu) ve girdi ön işlemesine bağımlı kılar.
 
-Hiperparametre optimizasyonu genellikle iki yolla yapılır: alan bilgisine ve hipotezlere dayalı **manuel arama** ve arama uzayından aday örnekleyen **otomatik arama** (ör. Random Search). Her iki yaklaşımın da adil karşılaştırılabilmesi, aynı veri bölünmeleri, aynı değerlendirme metriği ve aynı aday bütçesiyle çalıştırılmalarını gerektirir. Ayrıca hiperparametre seçimi ile performans tahmini aynı veride yapıldığında elde edilen skor iyimser biçimde yanlı olur. **İç içe çapraz doğrulama (nested cross-validation)**, seçimi iç döngüde, performans tahminini dış döngüde yaparak bu yanlılığı azaltır.
+Hiperparametre optimizasyonu genellikle iki yolla yapılır: alan bilgisine ve hipotezlere dayalı **manuel arama** ve arama uzayından aday örnekleyen **otomatik arama** (ör. Random Search). Adil karşılaştırma aynı bölünmeleri, metriği ve aday bütçesini gerektirir. Ayrıca hiperparametre seçimi ile performans tahmini aynı veride yapıldığında elde edilen skor iyimser biçimde yanlı olur. **İç içe çapraz doğrulama (nested cross-validation)**, seçimi iç döngüde, performans tahminini dış döngüde yaparak bu yanlılığı azaltır.
 
 Bu çalışmada kullanılan Bank Marketing verisinde pozitif sınıf oranı yaklaşık %11'dir. Böyle **dengesiz** bir problemde doğruluk (accuracy) yanıltıcıdır: tüm örnekleri negatif tahmin eden bir model bile yaklaşık %89 doğruluğa ulaşır. Bu nedenle birincil metrik olarak pozitif sınıfa odaklanan **Average Precision (AP)** seçilmiş; ROC-AUC, F1, duyarlılık (sensitivity), özgüllük (specificity) ve dengelenmiş doğruluk (balanced accuracy) tamamlayıcı metrikler olarak raporlanmıştır.
 
@@ -41,20 +41,7 @@ Modelleme öncesinde, performans incelenmeden önce aşağıdaki kurallar sabitl
 
 ### 2.2 Seed politikası ve veri bölünmesi
 
-Temel seed, öğrenci numarasının son beş hanesine (29015) 2026 eklenerek **31041** olarak belirlenmiştir. Alt seed'ler temel seed'e sabit ofset eklenerek deterministik biçimde türetilmiş ve deneylerden önce `configs/seeds.json` dosyasında kayıt altına alınmıştır (Tablo 0).
-
-**Tablo 0.** Seed politikası.
-
-| Amaç | Seed |
-|---|---|
-| Development/test bölünmesi | 31041 |
-| Outer CV (StratifiedKFold) | 31042 |
-| Inner CV (StratifiedKFold) | 31043 |
-| Early-stop alt kümesi ayrımı | 31044 |
-| Random Search aday örneklemesi | 31045 |
-| PyTorch ağırlık başlangıcı (ana) | 31046 |
-| Seed kararlılığı için nihai seed'ler | 31046, 31146, 31246 |
-| Bootstrap | 31047 |
+Temel seed, öğrenci numarasının son beş hanesine (29015) 2026 eklenerek **31041** olarak belirlenmiştir. Alt seed'ler temel seed'e sabit ofset eklenerek deterministik biçimde türetilmiş ve deneylerden önce `configs/seeds.json` dosyasında kayıt altına alınmıştır (Ek B, Tablo 0): bölünme 31041, dış CV 31042, iç CV 31043, early-stop ayrımı 31044, Random Search 31045, PyTorch başlangıcı 31046 (nihai seed'ler 31046, 31146, 31246), bootstrap 31047.
 
 Veri, hedef değişkene göre tabakalı (stratified) olarak %80 development ve %20 bağımsız test kümesine ayrılmıştır. Test kümesi EDA, ön işleme fit işlemleri, hiperparametre seçimi ve eşik belirlemede hiç kullanılmamıştır. Orijinal satır indeksleri `results/dataset_split.csv` dosyasına kaydedilmiştir.
 
@@ -72,44 +59,11 @@ Veri, hedef değişkene göre tabakalı (stratified) olarak %80 development ve %
 
 ### 2.3 Tanımlayıcı istatistikler
 
-Bu bölümdeki tüm tablo ve şekiller yalnızca development verisinden (n = 3.295) `01_eda.ipynb` ile üretilmiştir. Kaynak: `results/eda_numeric_desc.csv`, `results/eda_outliers.csv`, `results/eda_unknown_counts.csv`.
-
-**Tablo 1b.** Sayısal özellikler (development). IQR dışı: [Q1 − 1,5·IQR, Q3 + 1,5·IQR] aralığı dışında kalan gözlem sayısı.
-
-| Özellik | Ortalama | Medyan | SD | IQR | Min–Maks | Çarpıklık | IQR dışı n (%) |
-|---|---|---|---|---|---|---|---|
-| age | 40,03 | 38,0 | 10,36 | 15,0 | 18–88 | 0,74 | 32 (%1,0) |
-| campaign | 2,54 | 2,0 | 2,58 | 2,0 | 1–35 | 3,98 | 186 (%5,6) |
-| pdays | 961,93 | 999 | 188,27 | 0 | 0–999 | −4,88 | 123 (%3,7)* |
-| previous | 0,19 | 0 | 0,53 | 0 | 0–6 | 4,07 | 473 (%14,4)* |
-| emp.var.rate | 0,09 | 1,1 | 1,56 | 3,2 | −3,4–1,4 | −0,74 | 0 |
-| cons.price.idx | 93,58 | 93,80 | 0,58 | 0,92 | 92,20–94,77 | −0,22 | 0 |
-| cons.conf.idx | −40,50 | −41,8 | 4,61 | 6,3 | −50,8–(−26,9) | 0,28 | 36 (%1,1) |
-| euribor3m | 3,63 | 4,857 | 1,73 | 3,62 | 0,635–5,045 | −0,73 | 0 |
-| nr.employed | 5.166,7 | 5.191,0 | 73,9 | 129,0 | 4.963,6–5.228,1 | −1,09 | 0 |
-
-\*`pdays` ve `previous` için IQR sıfırdır; "aykırı" olarak işaretlenen değerler aslında daha önce temas kurulmuş müşterilerdir ve gerçek aykırı değer değildir.
-
-**Tablo 1c.** Özel kodlu değerler (development). Diğer kategorik değişkenlerde "unknown" bulunmamaktadır; sayısal eksik değer yoktur.
-
-| Değişken | Kod | n | Oran |
-|---|---|---|---|
-| default | unknown | 627 | %19,03 |
-| education | unknown | 144 | %4,37 |
-| housing | unknown | 87 | %2,64 |
-| loan | unknown | 87 | %2,64 |
-| job | unknown | 33 | %1,00 |
-| marital | unknown | 8 | %0,24 |
-| pdays | 999 (önceki temas yok) | 3.172 | %96,27 |
-| poutcome | nonexistent | 2.822 | %85,64 |
+Bu bölümdeki tüm tablo ve şekiller yalnızca development verisinden (n = 3.295) `01_eda.ipynb` ile üretilmiştir. Kaynak: `results/eda_numeric_desc.csv`, `results/eda_outliers.csv`, `results/eda_unknown_counts.csv`. Sayısal özelliklerin ayrıntılı istatistikleri (Tablo 1b) ve özel kodlu değerler (Tablo 1c) Ek B'de verilmiştir.
 
 **Şekil 2a.** Development sınıf dağılımı: 2.934 negatif (%89,0), 361 pozitif (%11,0). `figures/eda_class_dist.png`
 
-**Şekil 2b.** Sayısal özelliklerin histogramları ve boxplot'ları. `figures/eda_numeric_hist.png`, `figures/eda_numeric_box.png`
-
 **Şekil 2c.** Sayısal özellikler arasındaki Pearson korelasyon matrisi. `figures/eda_corr.png`
-
-**Şekil 2d.** Kategorik özelliklerin frekans dağılımları ("unknown" dahil). `figures/eda_categorical_bars.png`
 
 **Yorum.** `campaign` ve `previous` belirgin biçimde sağa çarpıktır (çarpıklık ≈ 4). `campaign` için IQR kuralı gözlemlerin %5,6'sını işaretlemektedir; bu durum H1'deki kırpma ve RobustScaler seçeneklerinin gerekçesidir. `pdays` değişkeninde değerlerin %96'sı 999 özel kodudur, bu yüzden yüzdelik kırpma bu değişkene uygulanmamıştır (Bölüm 3.2). Makroekonomik değişkenler arasında çok yüksek korelasyonlar vardır: `emp.var.rate`–`euribor3m` r = 0,97, `euribor3m`–`nr.employed` r = 0,94, `emp.var.rate`–`nr.employed` r = 0,90. Bu değişkenler aynı ekonomik dönemi farklı biçimlerde ölçmektedir. Betimsel hedef karşılaştırmasında pozitif sınıfın daha düşük `euribor3m` (ortalama 2,14 vs 3,81) ve `emp.var.rate` (−1,17 vs 0,25) dönemlerinde yoğunlaştığı, `poutcome = success` grubunda pozitif oranının %64, `nonexistent` grubunda ise %8,5 olduğu görülmektedir. En sık "unknown" `default` değişkenindedir (%19). **Hiçbir özellik EDA'ya dayanarak elenmemiştir;** hedefle ilişkiye dayalı bir eleme model seçimi sayılacağından yalnızca iç CV içinde yapılabilirdi.
 
@@ -173,21 +127,9 @@ MLP'ler PyTorch ile kurulmuştur. Gizli katmanlar `Linear → aktivasyon (ReLU v
 - (32,) mimarisi (M1): 61·32 + 32 + 32·1 + 1 = **2.017** parametre.
 - (64,32) mimarisi (M5): 61·64 + 64 + 64·32 + 32 + 32·1 + 1 = **6.081** parametre.
 
-Kesin değerler her eğitimde koddan hesaplanıp kaydedilmektedir.
+Kesin değerler her eğitimde koddan hesaplanıp kaydedilmektedir. Eğitim ayarlarının özeti Ek B'de (Tablo 3) verilmiştir.
 
 **Şekil 3.** Nihai MLP (M2) mimari şeması ve katman bazında öğrenilebilir parametre hesabı. Girdi katmanı 9 sayısal ve 52 one-hot özellikten oluşur (d = 61). Gizli katmanda 61·32 ağırlık + 32 bias = 1.984, çıkış katmanında 32·1 + 1 = 33 parametre vardır; toplam 2.017. Şekil, eğitilmiş modelin katmanlarından kodla üretilmiş ve toplam parametre sayısı modelin kayıtlı değeriyle doğrulanmıştır. `figures/mlp_architecture.png`
-
-**Tablo 3.** Eğitim ayarları.
-
-| Bileşen | Ayar |
-|---|---|
-| Maksimum epoch | 150 (gerçek en iyi ve durulan epoch kaydedilir) |
-| Optimizer | SGD + Momentum (0,9), Adam, AdamW |
-| Erken durdurma | Aktif; patience = 15; en iyi ağırlıklar geri yüklenir |
-| Early-stop monitor | İç eğitim bölümünden %15 tabakalı alt doğrulama |
-| LR planlayıcı | ReduceLROnPlateau (mode=min, factor=0,5, patience=5, min_lr=1e-5) |
-| İzlenen metrik | Early-stop alt kümesinde BCE kaybı |
-| HP seçim metriği | İç CV `average_precision_score` (AP) |
 
 **Optimizer'lar.** SGD + Momentum (0,9), tek bir global öğrenme oranıyla gradyan yönünde ilerler ve önceki adımların ivmesini kullanır; öğrenme oranına en duyarlı yöntemdir. Adam, gradyanların birinci ve ikinci momentlerini kullanarak her parametre için uyarlamalı adım büyüklüğü hesaplar; weight decay L2 cezası olarak gradyana eklendiğinden uyarlamalı ölçeklemeden etkilenir. AdamW aynı uyarlamalı güncellemeyi kullanır, ancak weight decay'i gradyandan ayrık (decoupled) biçimde doğrudan ağırlıklara uygular (Loshchilov ve Hutter, 2019). M1 (AdamW) ile M2 (Adam) karşılaştırması bu farkı ölçer.
 
@@ -242,21 +184,7 @@ Manuel adaylar, H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edece
 
 ### 4.2 Otomatik arama (R1–R6)
 
-`ParameterSampler` (random_state = 31045) ile her optimizer için tam iki aday olmak üzere toplam altı aday örneklenmiş ve nested CV'den önce `configs/random_configs.json` dosyasına kaydedilmiştir. Arama uzayı Tablo 5a'da verilmiştir. SGD'nin aynı öğrenme oranında yavaş yakınsama olasılığı nedeniyle SGD için öğrenme oranı aralığı bir büyüklük mertebesi yukarı kaydırılmıştır.
-
-**Tablo 5a.** Random Search arama uzayı.
-
-| Hiperparametre | Uzay |
-|---|---|
-| Optimizer | SGD + Momentum, Adam, AdamW (her biri için 2 aday) |
-| Gizli katmanlar | (16,), (32,), (64,), (64,32), (128,64) |
-| Aktivasyon | ReLU, tanh |
-| Öğrenme oranı | Adam/AdamW: 1e-4–1e-2; SGD: 1e-3–1e-1 (log-uniform) |
-| Weight decay | 0, 1e-5, 1e-4, 1e-3 |
-| Batch size | 32, 64, 128 |
-| Ölçekleyici | Standard, MinMax, Robust |
-| Dropout | 0,0, 0,2 |
-| Aykırı değer kırpma | Yok, eğitim katında öğrenilmiş (1.–99. yüzdelik) |
+`ParameterSampler` (random_state = 31045) ile her optimizer için tam iki aday olmak üzere toplam altı aday örneklenmiş ve nested CV'den önce `configs/random_configs.json` dosyasına kaydedilmiştir. Arama uzayı (Ek B, Tablo 5a): gizli katmanlar (16,), (32,), (64,), (64,32), (128,64); ReLU/tanh; LR Adam/AdamW için 1e-4–1e-2, SGD için 1e-3–1e-1 (log-uniform); weight decay 0, 1e-5, 1e-4, 1e-3; batch 32/64/128; Standard/MinMax/Robust; dropout 0/0,2; kırpma yok/var. SGD'nin aynı öğrenme oranında yavaş yakınsama olasılığı nedeniyle SGD için öğrenme oranı aralığı bir büyüklük mertebesi yukarı kaydırılmıştır.
 
 **Tablo 5b.** Örneklenen R1–R6 adayları (tek `RandomState(31045)` akışı, sırayla SGD → Adam → AdamW; planlayıcı tüm adaylarda açık). Adaylar `configs/random_configs.json` dosyasına yazılmış ve nested CV'den önce commit edilmiştir; örneklenen hiçbir aday sonradan değiştirilmemiştir.
 
@@ -299,24 +227,7 @@ Aşağıdaki karşılaştırmalar tüm development iç CV değerlerine dayanmakt
 
 ## 5. Nested CV Bulguları
 
-**Tablo 6.** Dış kat bazlı sonuçlar (eşik 0,50). Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kaynak: `results/outer_cv_results.csv`.
-
-| Dış kat | Yöntem | Seçilen | İç CV AP | AP | ROC-AUC | F1 | Sensitivity | Specificity | TP / FP / FN |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Manuel arama | M5 | 0,4676 | 0,3666 | 0,7500 | 0,2674 | 0,1901 | 0,9714 | 23 / 28 / 98 |
-| 1 | Otomatik arama | R6 | 0,4664 | 0,3739 | 0,7485 | 0,2874 | 0,1983 | 0,9775 | 24 / 22 / 97 |
-| 1 | LogisticRegression | – | – | 0,3915 | 0,7587 | 0,3333 | 0,2397 | 0,9755 | 29 / 24 / 92 |
-| 1 | Dummy | – | – | 0,1101 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 121 |
-| 2 | Manuel arama | M3 | 0,3910 | 0,4554 | 0,7918 | 0,3185 | 0,2083 | 0,9877 | 25 / 12 / 95 |
-| 2 | Otomatik arama | R6 | 0,3771 | 0,4500 | 0,7810 | 0,3855 | 0,2667 | 0,9857 | 32 / 14 / 88 |
-| 2 | LogisticRegression | – | – | 0,4478 | 0,7745 | 0,4192 | 0,2917 | 0,9877 | 35 / 12 / 85 |
-| 2 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
-| 3 | Manuel arama | M2 | 0,4136 | 0,4659 | 0,7987 | 0,3478 | 0,2333 | 0,9867 | 28 / 13 / 92 |
-| 3 | Otomatik arama | R2 | 0,4149 | 0,4290 | 0,7888 | 0,3333 | 0,2250 | 0,9847 | 27 / 15 / 93 |
-| 3 | LogisticRegression | – | – | 0,4207 | 0,7890 | 0,3432 | 0,2417 | 0,9796 | 29 / 20 / 91 |
-| 3 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
-
-Dış kat 2'de seçilen M3'ün refit eğitimi 150 epoch sınırına ulaşmıştır (yakınsama uyarısı).
+Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kat bazlı ham sonuçlar (seçilen aday, iç CV AP, tüm metrikler ve TP/FP/FN) Ek B'de Tablo 6'da verilmiştir. Dış kat 2'de seçilen M3'ün refit eğitimi 150 epoch sınırına ulaşmıştır (yakınsama uyarısı).
 
 **Tablo 7.** Dış CV Mean ± SD (n = 3, örnek SD). Kaynak: `results/outer_cv_summary_formatted.csv`.
 
@@ -345,25 +256,9 @@ Dış katlarda seçilen adaylar tutarlı değildir: manuel arama sırasıyla M5,
 
 Bölüm 5.1'deki kurala göre seçilen M2 konfigürasyonu (Adam, (32,), ReLU, LR = 0,001, WD = 1e-4, batch 64, StandardScaler, dropout 0, kırpma yok, planlayıcı açık) tüm development verisi üzerinde eğitilmiştir. Development, 2.800 örneklik fit alt kümesine ve 495 örneklik tabakalı early-stop alt kümesine ayrılmıştır (seed 31044). Ön işleme yalnızca fit alt kümesinde öğrenilmiştir. Aynı konfigürasyon önceden belirlenen üç ağırlık başlangıç seed'iyle eğitilmiş; ana seed 31046 olarak kilitlemeden önce ilan edilmiştir.
 
-**Tablo 8a.** Nihai eğitimler. Kaynak: `results/final_training_summary.csv`.
+Üç eğitim de (Ek B, Tablo 8a) en iyi epoch 18–20'de, early stopping ile durmuştur; yakınsama uyarısı veya başarısız eğitim yoktur. Öğrenme oranı iki kez yarıya inmiş, ancak her iki düşüş de en iyi epoch'tan sonra gerçekleşmiştir (Ek B, Şekil 4b). Bu, H4 bulgusuyla tutarlıdır. Her seed için model ağırlıkları, fit edilmiş ön işleme nesnesi ve öğrenilmiş dönüşüm istatistikleri (medyanlar, ölçekleyici ortalama/SD değerleri, kategori sözlüğü) test etiketleri okunmadan `models/` klasörüne kaydedilmiştir. Nihai hiperparametreler, eşik (0,50), seed'ler ve kitaplık sürümleri `results/final_hyperparameters.json` dosyasındadır.
 
-| Seed | Parametre | En iyi / durulan epoch | En iyi early-stop BCE | Son LR |
-|---|---|---|---|---|
-| **31046 (ana)** | 2.017 | 20 / 35 | 0,2628 | 2,5e-4 |
-| 31146 | 2.017 | 18 / 33 | 0,2605 | 2,5e-4 |
-| 31246 | 2.017 | 18 / 33 | 0,2662 | 2,5e-4 |
-
-Üç eğitim de early stopping ile durmuştur; yakınsama uyarısı veya başarısız eğitim yoktur. Öğrenme oranı iki kez yarıya inmiş, ancak her iki düşüş de en iyi epoch'tan sonra gerçekleşmiştir (Şekil 4b). Bu, H4 bulgusuyla tutarlıdır. Her seed için model ağırlıkları, fit edilmiş ön işleme nesnesi ve öğrenilmiş dönüşüm istatistikleri (medyanlar, ölçekleyici ortalama/SD değerleri, kategori sözlüğü) test etiketleri okunmadan `models/` klasörüne kaydedilmiştir. Nihai hiperparametreler, eşik (0,50), seed'ler ve kitaplık sürümleri `results/final_hyperparameters.json` dosyasındadır.
-
-**Şekil 4b.** Nihai modelin üç seed için eğitim ve early-stop doğrulama BCE kaybı ile epoch bazlı öğrenme oranı. `figures/final_training_curves.png`
-
-**Kilitleme kaydı.** Kilitleme üç ayrı commit ile kayıt altına alınmıştır:
-
-| Commit | Tarih | İçerik |
-|---|---|---|
-| `8a81da2` | 17.11.2026 19:46 | Nihai eğitim ve kilitli tahmin kodu |
-| `cb19a1c` | 18.11.2026 10:57 | Etiketsiz `test_predictions_locked.csv` (824 satır; 3 MLP seed'i + LogisticRegression için olasılık ve sınıf tahmini), manifest (sha256 `0acd5903…b451d1`), modeller |
-| `50b5b02` | 18.11.2026 11:28 | Test metrikleri (yalnızca kilit commit'i doğrulandıktan sonra) |
+**Kilitleme kaydı.** Nihai kod `8a81da2` (17.11.2026 19:46) commit'inde sabitlenmiş; etiketsiz `test_predictions_locked.csv` (824 satır; üç MLP seed'i ve LogisticRegression için olasılık ve sınıf tahmini), sha256 manifest'i (`0acd5903…b451d1`) ve modeller `cb19a1c` (18.11.2026 10:57) commit'iyle yüklenmiştir. Test metrikleri ancak bundan sonra `50b5b02` commit'inde hesaplanmıştır (Ek B).
 
 Değerlendirme kodu, kilitli dosya git'te commit edilmemişse, commit'ten sonra değiştirilmişse veya sha256 manifest ile uyuşmuyorsa test etiketlerini okumayı reddeder. Test etiketleri kamuya açık olduğundan bu işlem kör test garantisi değil, zaman sıralı bir deney kaydıdır.
 
@@ -399,7 +294,7 @@ MLP her iki sıralama metriğinde (AP, ROC-AUC) LogisticRegression'dan biraz yü
 
 **Şekil 7.** Bağımsız test ROC ve Precision–Recall eğrileri: MLP ve LogisticRegression. PR grafiğindeki kesikli çizgi pozitif sınıf oranını (0,109) gösterir. `figures/test_roc_pr.png`
 
-Şekil 7'de iki modelin eğrileri büyük ölçüde üst üste binmektedir. PR eğrisinde düşük duyarlılık bölgesinde (recall < 0,2) kesinlik 0,6–0,8 düzeyindedir. Duyarlılık 0,55–0,6'yı geçtikten sonra kesinlik hızla taban oranına yaklaşır. Pozitiflerin yaklaşık yarısı modelin yüksek olasılık verdiği küçük bir grupta toplanmakta, geri kalanı ise negatiflerden ayırt edilememektedir.
+Şekil 7'de iki modelin eğrileri büyük ölçüde üst üste binmektedir. Düşük duyarlılık bölgesinde (recall < 0,2) kesinlik 0,6–0,8 düzeyindedir; recall 0,55–0,6'yı geçtikten sonra kesinlik hızla taban oranına iner. Pozitiflerin yaklaşık yarısı yüksek olasılıklı küçük bir grupta toplanmakta, geri kalanı negatiflerden ayırt edilememektedir.
 
 ### 6.3 Seed kararlılığı
 
@@ -439,7 +334,7 @@ Ana modelde 15 yanlış pozitif (FP) ve 70 yanlış negatif (FN) vardır. Gerçe
 
 İç CV'de en iyi ve en kötü manuel aday arasındaki fark yalnızca 0,011 AP'dir (M2 0,441; M5 0,430). Bu fark katlar arası SD'nin (≈0,045) dörtte biridir. Otomatik adaylarda aralık daha geniştir (R5 0,407; R4 0,435), ancak yine SD mertebesindedir. Dolayısıyla bu veri setinde MLP performansı incelenen hiperparametrelere **düşük duyarlılık** göstermektedir. Sonuçları belirleyen asıl etken, mimari veya optimizer tercihinden çok mevcut özelliklerin taşıdığı sınırlı bilgidir.
 
-En belirgin hiperparametre etkisi performansta değil **yakınsama davranışında** görülmüştür. LR = 0,001 ile SGD+Momentum (M3) en iyi noktasına ortalama 128 epoch'ta ulaşmış, eğitimlerin çoğunda 150 epoch sınırına dayanmış ve Adam/AdamW'den yaklaşık üç kat uzun sürmüştür. Yine de AP kaybı küçüktür (0,432). SGD'nin öğrenme oranına duyarlılığı otomatik aramada da görülmüştür: LR = 0,027 olan R1 17,7 epoch'ta yakınsamış, LR = 0,0058 olan R2 ise 5 eğitimde epoch sınırına ulaşmıştır. Bu bulgu, SGD için arama uzayının daha yüksek öğrenme oranlarını kapsamasının gerekçesini doğrulamaktadır. Adam (M2) ile AdamW (M1) arasındaki fark ihmal edilebilir düzeydedir; WD = 1e-4 gibi küçük bir değerde bağlı ve ayrık weight decay pratikte aynı sonucu vermektedir. ReduceLROnPlateau, en iyi epoch'tan sonra devreye girdiği için nihai modeli etkilememiştir (H4). Planlayıcının etkili olabilmesi için patience değerinin daha küçük veya erken durdurma patience değerinin daha büyük seçilmesi gerekirdi. Bu ayarlar ödevde sabitlendiğinden değiştirilmemiştir.
+En belirgin hiperparametre etkisi performansta değil **yakınsama davranışında** görülmüştür (Bölüm 4.3). LR = 0,001 ile SGD+Momentum (M3) Adam/AdamW'ye göre yaklaşık 6 kat daha fazla epoch ve 3 kat daha uzun süre gerektirmiş, buna karşın AP kaybı küçük kalmıştır. Daha yüksek öğrenme oranlı R1'in hızla yakınsaması, SGD için arama uzayının yukarı kaydırılmasının gerekçesini doğrulamaktadır. Küçük weight decay (1e-4) değerinde Adam ile AdamW pratikte aynı sonucu vermiştir. ReduceLROnPlateau en iyi epoch'tan sonra devreye girdiği için nihai modeli etkilememiştir (H4). Etkili olabilmesi için planlayıcı patience değerinin daha küçük veya erken durdurma patience değerinin daha büyük olması gerekirdi; bu ayarlar ödevde sabitlendiğinden değiştirilmemiştir.
 
 ### 7.2 Aşırı öğrenme ve gereksiz karmaşıklık
 
@@ -486,12 +381,6 @@ Bu sonuçlar küçük test kümesi, üç katlı dış CV, rastgele (zamansal olm
 
 ---
 
-## Yapay Zekâ Kullanım Beyanı
-
-Bu projede kod yapısının planlanması, bazı yardımcı fonksiyonların yazılması ve rapor taslağının hazırlanmasında bir yapay zekâ asistanından (Anthropic Claude) yararlanılmıştır. Tüm deneyler yazar tarafından çalıştırılmış; rapordaki tüm sayısal sonuçlar depodaki kodla üretilmiş ve yazar tarafından kontrol edilmiştir.
-
----
-
 ## Kaynakça
 
 1. Moro, S., Rita, P. ve Cortez, P. (2014). *Bank Marketing* [Veri seti]. UCI Machine Learning Repository. https://doi.org/10.24432/C5K306
@@ -516,3 +405,116 @@ Bu projede kod yapısının planlanması, bazı yardımcı fonksiyonların yazı
 - Çalıştırma sırası: `python -m src.data` → `01_eda.ipynb` → `02_nested_cv.ipynb` → `03_final_test.ipynb`. Ham veri bulunmazsa ilk okumada UCI'den indirilir ve sha256 ile doğrulanır.
 - Toplam süre: nested CV (150 MLP eğitimi ve referans modeller) 172 saniye; nihai eğitimler 3 seed için birkaç saniye (CPU).
 - Kilitleme commit'leri: kod `8a81da2`, kilitli tahminler `cb19a1c`, test metrikleri `50b5b02`.
+
+---
+
+## Ek B. Ek Tablolar ve Şekiller
+
+Bu ekteki tablo ve şekiller ana metinde anılan ayrıntılardır; tamamı depodaki kodla üretilmiştir.
+
+**Tablo 0.** Seed politikası.
+
+| Amaç | Seed |
+|---|---|
+| Development/test bölünmesi | 31041 |
+| Outer CV (StratifiedKFold) | 31042 |
+| Inner CV (StratifiedKFold) | 31043 |
+| Early-stop alt kümesi ayrımı | 31044 |
+| Random Search aday örneklemesi | 31045 |
+| PyTorch ağırlık başlangıcı (ana) | 31046 |
+| Seed kararlılığı için nihai seed'ler | 31046, 31146, 31246 |
+| Bootstrap | 31047 |
+
+**Tablo 1b.** Sayısal özellikler (development). IQR dışı: [Q1 − 1,5·IQR, Q3 + 1,5·IQR] aralığı dışında kalan gözlem sayısı.
+
+| Özellik | Ortalama | Medyan | SD | IQR | Min–Maks | Çarpıklık | IQR dışı n (%) |
+|---|---|---|---|---|---|---|---|
+| age | 40,03 | 38,0 | 10,36 | 15,0 | 18–88 | 0,74 | 32 (%1,0) |
+| campaign | 2,54 | 2,0 | 2,58 | 2,0 | 1–35 | 3,98 | 186 (%5,6) |
+| pdays | 961,93 | 999 | 188,27 | 0 | 0–999 | −4,88 | 123 (%3,7)* |
+| previous | 0,19 | 0 | 0,53 | 0 | 0–6 | 4,07 | 473 (%14,4)* |
+| emp.var.rate | 0,09 | 1,1 | 1,56 | 3,2 | −3,4–1,4 | −0,74 | 0 |
+| cons.price.idx | 93,58 | 93,80 | 0,58 | 0,92 | 92,20–94,77 | −0,22 | 0 |
+| cons.conf.idx | −40,50 | −41,8 | 4,61 | 6,3 | −50,8–(−26,9) | 0,28 | 36 (%1,1) |
+| euribor3m | 3,63 | 4,857 | 1,73 | 3,62 | 0,635–5,045 | −0,73 | 0 |
+| nr.employed | 5.166,7 | 5.191,0 | 73,9 | 129,0 | 4.963,6–5.228,1 | −1,09 | 0 |
+
+\*`pdays` ve `previous` için IQR sıfırdır; "aykırı" olarak işaretlenen değerler aslında daha önce temas kurulmuş müşterilerdir ve gerçek aykırı değer değildir.
+
+**Tablo 1c.** Özel kodlu değerler (development). Diğer kategorik değişkenlerde "unknown" bulunmamaktadır; sayısal eksik değer yoktur.
+
+| Değişken | Kod | n | Oran |
+|---|---|---|---|
+| default | unknown | 627 | %19,03 |
+| education | unknown | 144 | %4,37 |
+| housing | unknown | 87 | %2,64 |
+| loan | unknown | 87 | %2,64 |
+| job | unknown | 33 | %1,00 |
+| marital | unknown | 8 | %0,24 |
+| pdays | 999 (önceki temas yok) | 3.172 | %96,27 |
+| poutcome | nonexistent | 2.822 | %85,64 |
+
+**Şekil 2b.** Sayısal özelliklerin histogramları ve boxplot'ları. `figures/eda_numeric_hist.png`, `figures/eda_numeric_box.png`
+
+**Şekil 2d.** Kategorik özelliklerin frekans dağılımları ("unknown" dahil). `figures/eda_categorical_bars.png`
+
+**Tablo 3.** Eğitim ayarları.
+
+| Bileşen | Ayar |
+|---|---|
+| Maksimum epoch | 150 (gerçek en iyi ve durulan epoch kaydedilir) |
+| Optimizer | SGD + Momentum (0,9), Adam, AdamW |
+| Erken durdurma | Aktif; patience = 15; en iyi ağırlıklar geri yüklenir |
+| Early-stop monitor | İç eğitim bölümünden %15 tabakalı alt doğrulama |
+| LR planlayıcı | ReduceLROnPlateau (mode=min, factor=0,5, patience=5, min_lr=1e-5) |
+| İzlenen metrik | Early-stop alt kümesinde BCE kaybı |
+| HP seçim metriği | İç CV `average_precision_score` (AP) |
+
+**Tablo 5a.** Random Search arama uzayı.
+
+| Hiperparametre | Uzay |
+|---|---|
+| Optimizer | SGD + Momentum, Adam, AdamW (her biri için 2 aday) |
+| Gizli katmanlar | (16,), (32,), (64,), (64,32), (128,64) |
+| Aktivasyon | ReLU, tanh |
+| Öğrenme oranı | Adam/AdamW: 1e-4–1e-2; SGD: 1e-3–1e-1 (log-uniform) |
+| Weight decay | 0, 1e-5, 1e-4, 1e-3 |
+| Batch size | 32, 64, 128 |
+| Ölçekleyici | Standard, MinMax, Robust |
+| Dropout | 0,0, 0,2 |
+| Aykırı değer kırpma | Yok, eğitim katında öğrenilmiş (1.–99. yüzdelik) |
+
+**Tablo 6.** Dış kat bazlı sonuçlar (eşik 0,50). Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kaynak: `results/outer_cv_results.csv`.
+
+| Dış kat | Yöntem | Seçilen | İç CV AP | AP | ROC-AUC | F1 | Sensitivity | Specificity | TP / FP / FN |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Manuel arama | M5 | 0,4676 | 0,3666 | 0,7500 | 0,2674 | 0,1901 | 0,9714 | 23 / 28 / 98 |
+| 1 | Otomatik arama | R6 | 0,4664 | 0,3739 | 0,7485 | 0,2874 | 0,1983 | 0,9775 | 24 / 22 / 97 |
+| 1 | LogisticRegression | – | – | 0,3915 | 0,7587 | 0,3333 | 0,2397 | 0,9755 | 29 / 24 / 92 |
+| 1 | Dummy | – | – | 0,1101 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 121 |
+| 2 | Manuel arama | M3 | 0,3910 | 0,4554 | 0,7918 | 0,3185 | 0,2083 | 0,9877 | 25 / 12 / 95 |
+| 2 | Otomatik arama | R6 | 0,3771 | 0,4500 | 0,7810 | 0,3855 | 0,2667 | 0,9857 | 32 / 14 / 88 |
+| 2 | LogisticRegression | – | – | 0,4478 | 0,7745 | 0,4192 | 0,2917 | 0,9877 | 35 / 12 / 85 |
+| 2 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
+| 3 | Manuel arama | M2 | 0,4136 | 0,4659 | 0,7987 | 0,3478 | 0,2333 | 0,9867 | 28 / 13 / 92 |
+| 3 | Otomatik arama | R2 | 0,4149 | 0,4290 | 0,7888 | 0,3333 | 0,2250 | 0,9847 | 27 / 15 / 93 |
+| 3 | LogisticRegression | – | – | 0,4207 | 0,7890 | 0,3432 | 0,2417 | 0,9796 | 29 / 20 / 91 |
+| 3 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
+
+**Tablo 8a.** Nihai eğitimler. Kaynak: `results/final_training_summary.csv`.
+
+| Seed | Parametre | En iyi / durulan epoch | En iyi early-stop BCE | Son LR |
+|---|---|---|---|---|
+| **31046 (ana)** | 2.017 | 20 / 35 | 0,2628 | 2,5e-4 |
+| 31146 | 2.017 | 18 / 33 | 0,2605 | 2,5e-4 |
+| 31246 | 2.017 | 18 / 33 | 0,2662 | 2,5e-4 |
+
+**Şekil 4b.** Nihai modelin üç seed için eğitim ve early-stop doğrulama BCE kaybı ile epoch bazlı öğrenme oranı. `figures/final_training_curves.png`
+
+**Tablo 8c.** Kilitleme commit'leri.
+
+| Commit | Tarih | İçerik |
+|---|---|---|
+| `8a81da2` | 17.11.2026 19:46 | Nihai eğitim ve kilitli tahmin kodu |
+| `cb19a1c` | 18.11.2026 10:57 | Etiketsiz `test_predictions_locked.csv` (824 satır; 3 MLP seed'i + LogisticRegression için olasılık ve sınıf tahmini), manifest (sha256 `0acd5903…b451d1`), modeller |
+| `50b5b02` | 18.11.2026 11:28 | Test metrikleri (yalnızca kilit commit'i doğrulandıktan sonra) |
