@@ -17,11 +17,11 @@ Bu çalışmada UCI Bank Marketing veri setinin `bank-additional.csv` sürümün
 
 ## 1. Giriş
 
-Çok Katmanlı Algılayıcı (Multi-Layer Perceptron, MLP), doğrusal dönüşümlerin doğrusal olmayan aktivasyon fonksiyonlarıyla art arda uygulandığı ileri beslemeli bir yapay sinir ağıdır. Yeterli gizli birim sayısıyla sürekli fonksiyonlara keyfî yakınlıkta yaklaşabilmesi MLP'yi tablo verilerinde güçlü bir aday yapar; ancak bu esneklik, modelin başarısını büyük ölçüde hiperparametre seçimlerine (mimari, optimizer, öğrenme oranı, düzenlileştirme, yığın boyutu) ve girdi ön işlemesine bağımlı kılar.
+Çok Katmanlı Algılayıcı (Multi-Layer Perceptron, MLP), doğrusal dönüşümlerin doğrusal olmayan aktivasyon fonksiyonlarıyla art arda uygulandığı ileri beslemeli bir yapay sinir ağıdır. Bu esneklik, modelin başarısını hiperparametre seçimlerine (mimari, optimizer, öğrenme oranı, düzenlileştirme, yığın boyutu) ve girdi ön işlemesine bağımlı kılar.
 
-Hiperparametre optimizasyonu genellikle iki yolla yapılır: alan bilgisine ve hipotezlere dayalı **manuel arama** ve arama uzayından aday örnekleyen **otomatik arama** (ör. Random Search). Adil karşılaştırma aynı bölünmeleri, metriği ve aday bütçesini gerektirir. Ayrıca hiperparametre seçimi ile performans tahmini aynı veride yapıldığında elde edilen skor iyimser biçimde yanlı olur. **İç içe çapraz doğrulama (nested cross-validation)**, seçimi iç döngüde, performans tahminini dış döngüde yaparak bu yanlılığı azaltır.
+Hiperparametre optimizasyonu iki yolla yapılabilir: hipotezlere dayalı **manuel arama** ve arama uzayından aday örnekleyen **otomatik arama** (ör. Random Search). Adil karşılaştırma aynı bölünmeleri, metriği ve aday bütçesini gerektirir. Hiperparametre seçimi ile performans tahmini aynı veride yapıldığında skor iyimser biçimde yanlı olur; **iç içe çapraz doğrulama (nested cross-validation)** seçimi iç döngüde, performans tahminini dış döngüde yaparak bu yanlılığı azaltır.
 
-Bu çalışmada kullanılan Bank Marketing verisinde pozitif sınıf oranı yaklaşık %11'dir. Böyle **dengesiz** bir problemde doğruluk (accuracy) yanıltıcıdır: tüm örnekleri negatif tahmin eden bir model bile yaklaşık %89 doğruluğa ulaşır. Bu nedenle birincil metrik olarak pozitif sınıfa odaklanan **Average Precision (AP)** seçilmiş; ROC-AUC, F1, duyarlılık (sensitivity), özgüllük (specificity) ve dengelenmiş doğruluk (balanced accuracy) tamamlayıcı metrikler olarak raporlanmıştır.
+Kullanılan Bank Marketing verisinde pozitif sınıf oranı yaklaşık %11'dir. Böyle **dengesiz** bir problemde doğruluk (accuracy) yanıltıcıdır: tüm örnekleri negatif tahmin eden bir model bile yaklaşık %89 doğruluğa ulaşır. Bu nedenle birincil metrik olarak pozitif sınıfa odaklanan **Average Precision (AP)** seçilmiş; ROC-AUC, F1, duyarlılık, özgüllük ve dengelenmiş doğruluk tamamlayıcı metrikler olarak raporlanmıştır.
 
 Çalışmanın amaçları şunlardır: (i) veri sızıntısını önleyen, tekrarlanabilir bir deney akışı kurmak; (ii) altı hipotez temelli manuel ve altı rastgele aday konfigürasyonu aynı 3×3 nested CV düzeninde karşılaştırmak; (iii) seçilen modelin genelleme başarısını yalnızca bir kez kullanılan bağımsız test kümesinde, güven aralıkları ve seed kararlılığıyla birlikte ölçmek.
 
@@ -35,15 +35,15 @@ UCI Machine Learning Repository'deki Bank Marketing veri setinin yalnızca `bank
 
 Modelleme öncesinde, performans incelenmeden önce aşağıdaki kurallar sabitlenmiştir:
 
-- **`duration` çıkarıldı.** Görüşme süresi, görüşme gerçekleşmeden bilinemez ve hedefle doğrudan ilişkilidir (süre 0 ise sonuç zorunlu olarak "no"dur). Gerçekçi bir tahmin senaryosunda kullanılamayacağından tüm modellerden çıkarılmıştır. Böylece 19 girdi özelliği kalmıştır: 9 sayısal, 10 kategorik.
-- **"unknown" değerleri NaN kabul edilmedi.** Kategorik değişkenlerdeki "unknown" kodu ayrı bir kategori olarak korunmuştur; bilginin yokluğu da bilgi taşıyabilir (ör. `default` değişkeninde).
+- **`duration` çıkarıldı.** Görüşme süresi görüşmeden önce bilinemez ve hedefle doğrudan ilişkilidir; tüm modellerden çıkarılmıştır. Böylece 19 girdi özelliği kalmıştır: 9 sayısal, 10 kategorik.
+- **"unknown" değerleri NaN kabul edilmedi.** Kategorik değişkenlerdeki "unknown" kodu ayrı bir kategori olarak korunmuştur; bilginin yokluğu da bilgi taşıyabilir.
 - **`pdays = 999` korundu.** Bu değer "müşteriyle daha önce temas kurulmamış" anlamına gelen özel bir koddur; sıradan aykırı değer olarak silinmemiştir.
 
 ### 2.2 Seed politikası ve veri bölünmesi
 
 Temel seed, öğrenci numarasının son beş hanesine (29015) 2026 eklenerek **31041** olarak belirlenmiştir. Alt seed'ler temel seed'e sabit ofset eklenerek deterministik biçimde türetilmiş ve deneylerden önce `configs/seeds.json` dosyasında kayıt altına alınmıştır (Ek B, Tablo 0): bölünme 31041, dış CV 31042, iç CV 31043, early-stop ayrımı 31044, Random Search 31045, PyTorch başlangıcı 31046 (nihai seed'ler 31046, 31146, 31246), bootstrap 31047.
 
-Veri, hedef değişkene göre tabakalı (stratified) olarak %80 development ve %20 bağımsız test kümesine ayrılmıştır. Test kümesi EDA, ön işleme fit işlemleri, hiperparametre seçimi ve eşik belirlemede hiç kullanılmamıştır. Orijinal satır indeksleri `results/dataset_split.csv` dosyasına kaydedilmiştir.
+Veri, hedef değişkene göre tabakalı (stratified) olarak %80 development ve %20 bağımsız test kümesine ayrılmıştır (Tablo 1a). Test kümesi EDA, ön işleme fit işlemleri, hiperparametre seçimi ve eşik belirlemede hiç kullanılmamıştır. Orijinal satır indeksleri `results/dataset_split.csv` dosyasına kaydedilmiştir.
 
 **Tablo 1a.** Development/test bölünmesi ve sınıf dağılımı.
 
@@ -53,19 +53,48 @@ Veri, hedef değişkene göre tabakalı (stratified) olarak %80 development ve %
 | Bağımsız test | 824 | 90 | %10,92 |
 | **Toplam** | **4.119** | **451** | **%10,95** |
 
-**Kopya kayıtlar.** Ham veride birebir kopya satır bulunmamaktadır. `duration` çıkarıldıktan sonra 19 satır, başka bir satırla tüm özellikleri ve etiketi bakımından aynı hâle gelmiştir (20 kopya grubu; bunlardan birinde özellikler aynı, etiketler farklıdır). Bu satırlar ham veride farklı görüşmeleri temsil ettiğinden silinmemiştir. Kopya gruplarından 6'sı hem development hem test kümesinde örnek içermektedir. Test kümesinin büyüklüğü (824) düşünüldüğünde bu durumun etkisinin sınırlı olması beklenir; yine de bir sınırlama olarak not edilmiştir.
+**Kopya kayıtlar.** Ham veride birebir kopya satır yoktur. `duration` çıkarıldıktan sonra 19 satır başka bir satırla aynı hâle gelmiştir (20 kopya grubu; birinde özellikler aynı, etiketler farklıdır). Bu satırlar farklı görüşmeleri temsil ettiğinden silinmemiştir; 6 grup hem development hem test kümesinde örnek içerir ve bu durum sınırlama olarak not edilmiştir.
 
-**Kişi-bağımsız genelleme sınırlaması.** Veride müşteri kimliği bulunmadığından aynı müşteriye ait birden fazla görüşme farklı kümelere düşebilir. Ayrıca veri zaman sırasına göre değil rastgele bölünmüştür. Bu nedenle elde edilen test performansı gelecekteki kampanyalara veya yeni müşterilere genellemeyi kanıtlamaz.
+**Kişi-bağımsız genelleme sınırlaması.** Veride müşteri kimliği bulunmadığından aynı müşterinin görüşmeleri farklı kümelere düşebilir; bölünme de zamansal değil rastgeledir. Bu nedenle test performansı gelecekteki kampanyalara veya yeni müşterilere genellemeyi kanıtlamaz.
 
 ### 2.3 Tanımlayıcı istatistikler
 
-Bu bölümdeki tüm tablo ve şekiller yalnızca development verisinden (n = 3.295) `01_eda.ipynb` ile üretilmiştir. Kaynak: `results/eda_numeric_desc.csv`, `results/eda_outliers.csv`, `results/eda_unknown_counts.csv`. Sayısal özelliklerin ayrıntılı istatistikleri (Tablo 1b) ve özel kodlu değerler (Tablo 1c) Ek B'de verilmiştir.
+Bu bölümdeki tüm tablo ve şekiller yalnızca development verisinden (n = 3.295) `01_eda.ipynb` ile üretilmiştir (kaynak: `results/eda_numeric_desc.csv`, `results/eda_outliers.csv`, `results/eda_unknown_counts.csv`). Kategorik frekans grafikleri Ek B'dedir (Şekil 2c).
 
-**Şekil 2a.** Development sınıf dağılımı: 2.934 negatif (%89,0), 361 pozitif (%11,0). `figures/eda_class_dist.png`
+**Tablo 1b.** Sayısal özellikler (development). IQR dışı: [Q1 − 1,5·IQR, Q3 + 1,5·IQR] aralığı dışında kalan gözlem sayısı.
 
-**Şekil 2c.** Sayısal özellikler arasındaki Pearson korelasyon matrisi. `figures/eda_corr.png`
+| Özellik | Ortalama | Medyan | SD | IQR | Min–Maks | Çarpıklık | IQR dışı n (%) |
+|---|---|---|---|---|---|---|---|
+| age | 40,03 | 38,0 | 10,36 | 15,0 | 18–88 | 0,74 | 32 (%1,0) |
+| campaign | 2,54 | 2,0 | 2,58 | 2,0 | 1–35 | 3,98 | 186 (%5,6) |
+| pdays | 961,93 | 999 | 188,27 | 0 | 0–999 | −4,88 | 123 (%3,7)* |
+| previous | 0,19 | 0 | 0,53 | 0 | 0–6 | 4,07 | 473 (%14,4)* |
+| emp.var.rate | 0,09 | 1,1 | 1,56 | 3,2 | −3,4–1,4 | −0,74 | 0 |
+| cons.price.idx | 93,58 | 93,80 | 0,58 | 0,92 | 92,20–94,77 | −0,22 | 0 |
+| cons.conf.idx | −40,50 | −41,8 | 4,61 | 6,3 | −50,8–(−26,9) | 0,28 | 36 (%1,1) |
+| euribor3m | 3,63 | 4,857 | 1,73 | 3,62 | 0,635–5,045 | −0,73 | 0 |
+| nr.employed | 5.166,7 | 5.191,0 | 73,9 | 129,0 | 4.963,6–5.228,1 | −1,09 | 0 |
 
-**Yorum.** `campaign` ve `previous` belirgin biçimde sağa çarpıktır (çarpıklık ≈ 4). `campaign` için IQR kuralı gözlemlerin %5,6'sını işaretlemektedir; bu durum H1'deki kırpma ve RobustScaler seçeneklerinin gerekçesidir. `pdays` değişkeninde değerlerin %96'sı 999 özel kodudur, bu yüzden yüzdelik kırpma bu değişkene uygulanmamıştır (Bölüm 3.2). Makroekonomik değişkenler arasında çok yüksek korelasyonlar vardır: `emp.var.rate`–`euribor3m` r = 0,97, `euribor3m`–`nr.employed` r = 0,94, `emp.var.rate`–`nr.employed` r = 0,90. Bu değişkenler aynı ekonomik dönemi farklı biçimlerde ölçmektedir. Betimsel hedef karşılaştırmasında pozitif sınıfın daha düşük `euribor3m` (ortalama 2,14 vs 3,81) ve `emp.var.rate` (−1,17 vs 0,25) dönemlerinde yoğunlaştığı, `poutcome = success` grubunda pozitif oranının %64, `nonexistent` grubunda ise %8,5 olduğu görülmektedir. En sık "unknown" `default` değişkenindedir (%19). **Hiçbir özellik EDA'ya dayanarak elenmemiştir;** hedefle ilişkiye dayalı bir eleme model seçimi sayılacağından yalnızca iç CV içinde yapılabilirdi.
+\*`pdays` ve `previous` için IQR sıfırdır; "aykırı" olarak işaretlenen değerler aslında daha önce temas kurulmuş müşterilerdir ve gerçek aykırı değer değildir.
+
+**Tablo 1c.** Özel kodlu değerler (development). Diğer kategorik değişkenlerde "unknown" bulunmamaktadır; sayısal eksik değer yoktur.
+
+| Değişken | Kod | n | Oran |
+|---|---|---|---|
+| default | unknown | 627 | %19,03 |
+| education | unknown | 144 | %4,37 |
+| housing | unknown | 87 | %2,64 |
+| loan | unknown | 87 | %2,64 |
+| job | unknown | 33 | %1,00 |
+| marital | unknown | 8 | %0,24 |
+| pdays | 999 (önceki temas yok) | 3.172 | %96,27 |
+| poutcome | nonexistent | 2.822 | %85,64 |
+
+**Şekil 2a.** Development sınıf dağılımı (2.934 negatif, %89,0; 361 pozitif, %11,0) ve sayısal özellikler arasındaki Pearson korelasyon matrisi. `figures/eda_class_dist.png`, `figures/eda_corr.png`
+
+**Şekil 2b.** Sayısal özelliklerin histogramları ve boxplot'ları. `figures/eda_numeric_hist.png`, `figures/eda_numeric_box.png`
+
+**Yorum.** `campaign` ve `previous` belirgin biçimde sağa çarpıktır (Tablo 1b, Şekil 2b; çarpıklık ≈ 4). `campaign` için IQR kuralı gözlemlerin %5,6'sını işaretlemektedir; bu durum H1'deki kırpma ve RobustScaler seçeneklerinin gerekçesidir. `pdays` değerlerinin %96'sı 999 özel kodudur (Tablo 1c), bu yüzden yüzdelik kırpma bu değişkene uygulanmamıştır. Makroekonomik değişkenler arasında çok yüksek korelasyonlar vardır (Şekil 2a): `emp.var.rate`–`euribor3m` r = 0,97, `euribor3m`–`nr.employed` r = 0,94. Betimsel hedef karşılaştırmasında pozitif sınıfın daha düşük `euribor3m` (ortalama 2,14 vs 3,81) ve `emp.var.rate` (−1,17 vs 0,25) dönemlerinde yoğunlaştığı, `poutcome = success` grubunda pozitif oranının %64, `nonexistent` grubunda %8,5 olduğu görülmektedir. En sık "unknown" `default` değişkenindedir (%19). **Hiçbir özellik EDA'ya dayanarak elenmemiştir;** hedefle ilişkiye dayalı bir eleme model seçimi sayılacağından yalnızca iç CV içinde yapılabilirdi.
 
 ### 2.4 Deney hipotezleri
 
@@ -86,34 +115,23 @@ Deney akışı Şekil 1'de özetlenmiştir. Bağımsız test kümesi ayrıldıkt
 
 **Şekil 1.** Veri bölünmesi ve nested CV akış şeması. `figures/flow_nested_cv.png`
 
-1. Development verisi, `StratifiedKFold(n_splits=3, shuffle=True, random_state=31042)` ile üç **dış kata** ayrılır.
-2. Her dış katın eğitim bölümü (outer-train), `StratifiedKFold(n_splits=3, shuffle=True, random_state=31043)` ile üç **iç kata** ayrılır.
-3. Her iç katın eğitim bölümü ayrıca ikiye bölünür: **%85 "fit" alt kümesi** ön işleme parametrelerini öğrenir ve MLP ağırlıklarını günceller; **%15 tabakalı "early-stop monitor" alt kümesi** yalnızca erken durdurma ve öğrenme oranı planlayıcısını yönetir.
-4. Her aday konfigürasyonun AP değeri **iç doğrulama katında** hesaplanır; aday seçimi üç iç katın ortalama AP'sine göre yapılır.
-5. Manuel (M1–M6) ve otomatik (R1–R6) aramalar aynı iç katlarda **ayrı ayrı** yürütülür. Her aramanın kazanan adayı outer-train üzerinde yeniden eğitilir ve dış değerlendirme katında **yalnızca bir kez** ölçülür.
-6. Dış kat skorları arama prosedürlerinin genelleme performansını tahmin etmek için raporlanır; konfigürasyonları değiştirmek veya iki stratejiden birini seçmek için **kullanılmaz**.
-7. Nihai seçim için tam development verisinde iç CV yeniden çalıştırılır; development iç CV ortalama AP değeri en yüksek olan konfigürasyon seçilir.
-8. Nihai model üç seed ile eğitilir. Test tahminleri etiketsiz olarak `test_predictions_locked.csv` dosyasına yazılır ve ayrı bir commit ile GitHub'a yüklenir. Test metrikleri yalnızca bu commit'ten sonra hesaplanır.
+1. Development verisi `StratifiedKFold(n_splits=3, shuffle=True, random_state=31042)` ile üç **dış kata**; her dış katın eğitim bölümü (outer-train) aynı yöntemle (random_state=31043) üç **iç kata** ayrılır.
+2. Her iç katın eğitim bölümü ikiye bölünür: **%85 "fit" alt kümesi** ön işleme parametrelerini öğrenir ve MLP ağırlıklarını günceller; **%15 tabakalı "early-stop monitor" alt kümesi** yalnızca erken durdurmayı ve öğrenme oranı planlayıcısını yönetir.
+3. Her adayın AP değeri **iç doğrulama katında** hesaplanır. Manuel (M1–M6) ve otomatik (R1–R6) aramalar aynı iç katlarda **ayrı ayrı** yürütülür; her aramanın en yüksek ortalama AP'li adayı outer-train'de yeniden eğitilir ve dış değerlendirme katında **yalnızca bir kez** ölçülür.
+4. Dış kat skorları arama prosedürlerinin genelleme performansını tahmin eder; konfigürasyonları değiştirmek veya stratejiler arasında seçim yapmak için **kullanılmaz**.
+5. Nihai seçim için tam development verisinde iç CV yeniden çalıştırılır ve ortalama AP'si en yüksek konfigürasyon seçilir. Nihai model üç seed ile eğitilir; test tahminleri etiketsiz olarak ayrı bir commit ile kilitlenir ve test metrikleri yalnızca bundan sonra hesaplanır.
 
-**Tablo 2.** Eğitim bütçesi.
-
-| Hesap | Eğitim sayısı |
-|---|---|
-| 3 dış × 3 iç × (6 manuel + 6 otomatik) | 108 |
-| Dış katlarda seçilen iki yöntemin yeniden eğitimi | 6 |
-| Tam development üzerinde 3 iç × 12 aday | 36 |
-| Nihai model, 3 seed | 3 |
-| **Toplam MLP eğitimi** | **153** |
+Eğitim bütçesi: 3 × 3 × 12 = 108 iç CV eğitimi, 6 dış kat yeniden eğitimi, tam development'ta 3 × 12 = 36 seçim eğitimi ve 3 nihai eğitim; toplam 153 MLP eğitimi (Ek B, Tablo 2).
 
 ### 3.2 Kat-içi ön işleme
 
 Ön işleme, scikit-learn `Pipeline` ve `ColumnTransformer` ile tanımlanmıştır. Tüm `fit` işlemleri yalnızca ilgili MLP ağırlık eğitim alt kümesinde ("fit" alt kümesi) yapılır; early-stop alt kümesine, iç doğrulama katına, dış değerlendirme katına ve teste yalnızca `transform` uygulanır. Öğrenilen parametreler şunlardır: medyan değerleri, kategori sözlüğü, ölçekleyici istatistikleri ve kırpma eşikleri.
 
 - **Sayısal özellikler:** medyan imputation (development verisinde sayısal eksik değer bulunmamaktadır; adım, pipeline'ın genelliği için korunmuştur) → isteğe bağlı yüzdelik kırpma (eşikler fit alt kümesinin 1. ve 99. yüzdeliklerinden öğrenilir) → ölçekleyici.
-- **`pdays` kırpılmaz.** Değerlerin yaklaşık %96'sı "daha önce temas yok" anlamındaki 999 özel kodudur; bu nedenle 99. yüzdelik 999'a, 1. yüzdelik küçük bir değere denk gelir ve kırpma yalnızca gerçek gün değerlerini (0–2) bozar. Bu karar hedef değişkene bakılmadan, değişkenin kodlama yapısına dayanılarak verilmiştir. Kırpma seçeneği açıkken yalnızca diğer sekiz sayısal özelliğe uygulanır.
-- **"unknown" ayrı kategori olarak sabitlenmiştir.** Veri sözlüğüne göre "unknown" bilginin alınamadığını kodlar ve bu durumun kendisi bilgi taşıyabilir. Karar, hedefle ilişkiye bakılarak değil önceden verilmiştir; alternatif (kat-içi en sık sınıfla doldurma) arama uzayı bütçesini aşmamak için değerlendirilmemiş ve sınırlama olarak not edilmiştir. Kategorik adımda yer alan en sık sınıf imputation'ı yalnızca gerçek NaN değerler için güvenlik amacıyla bulunur.
+- **`pdays` kırpılmaz.** Değerlerin %96'sı 999 özel kodudur; yüzdelik kırpma yalnızca gerçek gün değerlerini bozardı. Karar hedefe bakılmadan, kodlama yapısına dayanılarak verilmiştir; kırpma açıkken diğer sekiz sayısal özelliğe uygulanır.
+- **"unknown" ayrı kategori olarak sabitlenmiştir.** Karar hedefle ilişkiye bakılmadan önceden verilmiştir; kat-içi en sık sınıfla doldurma alternatifi bütçe nedeniyle değerlendirilmemiş ve sınırlama olarak not edilmiştir. Kategorik adımdaki en sık sınıf imputation'ı yalnızca gerçek NaN değerler içindir.
 - **Ölçekleyiciler:** **Standardization** (`StandardScaler`) her özelliği fit alt kümesinin ortalamasını çıkarıp standart sapmasına bölerek z-skoruna dönüştürür, değer aralığını sınırlamaz. **Normalization** (`MinMaxScaler`) değerleri fit alt kümesindeki min–maks aralığına göre [0, 1] aralığına taşır ve aykırı değerlere duyarlıdır. `RobustScaler` medyanı çıkarıp IQR'ye böler; aykırı değerlere karşı daha dayanıklıdır.
-- **Kategorik özellikler:** "unknown" ayrı kategori olarak korunur ve `OneHotEncoder(handle_unknown="ignore")` ile kodlanır. Fit alt kümesinde görülmemiş bir kategori diğer kümelerde sıfır vektörüyle temsil edilir.
+- **Kategorik özellikler:** `OneHotEncoder(handle_unknown="ignore")` ile kodlanır; fit alt kümesinde görülmemiş bir kategori diğer kümelerde sıfır vektörüyle temsil edilir.
 
 One-hot kodlamadan sonra girdi boyutu, fit alt kümesinde gözlenen kategori sayısına bağlıdır. Tüm development verisi için bu boyut 9 sayısal + 52 one-hot = **61**'dir; nadir kategoriler (ör. `education = illiterate`) bir alt kümede hiç bulunmazsa boyut 60'a düşebilir.
 
@@ -127,17 +145,15 @@ MLP'ler PyTorch ile kurulmuştur. Gizli katmanlar `Linear → aktivasyon (ReLU v
 - (32,) mimarisi (M1): 61·32 + 32 + 32·1 + 1 = **2.017** parametre.
 - (64,32) mimarisi (M5): 61·64 + 64 + 64·32 + 32 + 32·1 + 1 = **6.081** parametre.
 
-Kesin değerler her eğitimde koddan hesaplanıp kaydedilmektedir. Eğitim ayarlarının özeti Ek B'de (Tablo 3) verilmiştir.
+Kesin değerler her eğitimde koddan hesaplanıp kaydedilmektedir; nihai modelin katman bazlı hesabı Şekil 3'te gösterilmiştir. Eğitim ayarlarının özeti Ek B'de (Tablo 3) verilmiştir.
 
-**Şekil 3.** Nihai MLP (M2) mimari şeması ve katman bazında öğrenilebilir parametre hesabı. Girdi katmanı 9 sayısal ve 52 one-hot özellikten oluşur (d = 61). Gizli katmanda 61·32 ağırlık + 32 bias = 1.984, çıkış katmanında 32·1 + 1 = 33 parametre vardır; toplam 2.017. Şekil, eğitilmiş modelin katmanlarından kodla üretilmiş ve toplam parametre sayısı modelin kayıtlı değeriyle doğrulanmıştır. `figures/mlp_architecture.png`
+**Şekil 3.** Nihai MLP (M2) mimari şeması ve katman bazında öğrenilebilir parametre hesabı (d = 61; 1.984 + 33 = 2.017). Şekil eğitilmiş modelin katmanlarından kodla üretilmiş, toplam modelin kayıtlı değeriyle doğrulanmıştır. `figures/mlp_architecture.png`
 
-**Optimizer'lar.** SGD + Momentum (0,9), tek bir global öğrenme oranıyla gradyan yönünde ilerler ve önceki adımların ivmesini kullanır; öğrenme oranına en duyarlı yöntemdir. Adam, gradyanların birinci ve ikinci momentlerini kullanarak her parametre için uyarlamalı adım büyüklüğü hesaplar; weight decay L2 cezası olarak gradyana eklendiğinden uyarlamalı ölçeklemeden etkilenir. AdamW aynı uyarlamalı güncellemeyi kullanır, ancak weight decay'i gradyandan ayrık (decoupled) biçimde doğrudan ağırlıklara uygular (Loshchilov ve Hutter, 2019). M1 (AdamW) ile M2 (Adam) karşılaştırması bu farkı ölçer.
+**Optimizer'lar.** SGD + Momentum (0,9) tek bir global öğrenme oranı kullanır ve öğrenme oranına en duyarlı yöntemdir. Adam her parametre için uyarlamalı adım büyüklüğü hesaplar; weight decay gradyana L2 cezası olarak eklenir. AdamW weight decay'i gradyandan ayrık biçimde doğrudan ağırlıklara uygular (Loshchilov ve Hutter, 2019). M1 (AdamW) ile M2 (Adam) karşılaştırması bu farkı ölçer.
 
-**Diğer ayrıntılar.** Ağırlıklar PyTorch'un varsayılan başlangıcıyla (Kaiming-uniform) ilklendirilmiştir. Erken durdurmada iyileşme eşiği `min_delta = 0`'dır; planlayıcı PyTorch'un varsayılan eşiğini kullanır. Sınıf ağırlıklandırması (class weight) M1–M6 tanımlarında bulunmadığından ve tek-faktör karşılaştırmayı bozacağından uygulanmamıştır. Fit/early-stop ayrımı tüm adaylarda aynı seed (31044) ile yapılır; böylece adaylar aynı katta aynı alt kümeleri görür. Tüm eğitimler CPU üzerinde yapılmıştır. Early stopping tetiklenmeden 150 epoch'a ulaşan eğitimler "yakınsama uyarısı", sonlu olmayan kayıp üreten eğitimler "başarısız" olarak kaydedilir ve sonuçlardan çıkarılmaz.
+**Diğer ayrıntılar.** Ağırlıklar PyTorch varsayılanıyla (Kaiming-uniform) ilklendirilmiştir; erken durdurmada `min_delta = 0`'dır. Sınıf ağırlıklandırması tek-faktör karşılaştırmayı bozacağından uygulanmamıştır. Fit/early-stop ayrımı tüm adaylarda aynı seed (31044) ile yapılır. Tüm eğitimler CPU'da yapılmıştır. Early stopping tetiklenmeden 150 epoch'a ulaşan eğitimler "yakınsama uyarısı", sonlu olmayan kayıp üretenler "başarısız" olarak kaydedilir ve sonuçlardan çıkarılmaz. Her eğitimden önce Python, NumPy ve PyTorch seed'leri ayarlanır ve deterministik algoritmalar etkinleştirilir.
 
 Planlayıcı her epoch sonunda early-stop alt kümesindeki doğrulama kaybıyla güncellenir. Erken durdurma ve öğrenme oranı düşürme aynı alt kümeyi izler; iç CV doğrulama katı bu amaçla kullanılmaz. Erken durdurmada AP yerine BCE kaybı kullanılmıştır. BCE kaybı epoch'tan epoch'a daha düzgün değişir ve olasılık kalibrasyonunu da yansıtır. AP ise hiperparametre seçiminin birincil metriği olarak korunmuştur. Her eğitimde eğitim kaybı, iç doğrulama kaybı, epoch bazlı öğrenme oranı, en iyi epoch, süre ve uyarılar CSV olarak kaydedilir.
-
-Tekrarlanabilirlik için her eğitimden önce Python, NumPy ve PyTorch seed'leri ayarlanır ve deterministik algoritmalar etkinleştirilir.
 
 ### 3.4 Referans modeller
 
@@ -156,7 +172,7 @@ Birincil metrik **AP**'dir (`average_precision_score`). AP, precision–recall e
 
 ### 4.1 Manuel arama (M1–M6)
 
-Manuel adaylar, H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edecek şekilde, nested CV başlamadan önce `configs/manual_configs.json` dosyasına kaydedilmiştir. Ortak varsayılanlar: batch size = 64, dropout = 0, aktivasyon = ReLU, weight decay = 1e-4, erken durdurma aktif, kırpma yok.
+Manuel adaylar (Tablo 4a), H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edecek şekilde, nested CV başlamadan önce `configs/manual_configs.json` dosyasına kaydedilmiştir. Ortak varsayılanlar: batch size = 64, dropout = 0, aktivasyon = ReLU, weight decay = 1e-4, erken durdurma aktif, kırpma yok.
 
 **Tablo 4a.** Manuel aday tanımları.
 
@@ -184,7 +200,7 @@ Manuel adaylar, H1–H4 hipotezlerini tek-faktör kontrollü biçimde test edece
 
 ### 4.2 Otomatik arama (R1–R6)
 
-`ParameterSampler` (random_state = 31045) ile her optimizer için tam iki aday olmak üzere toplam altı aday örneklenmiş ve nested CV'den önce `configs/random_configs.json` dosyasına kaydedilmiştir. Arama uzayı (Ek B, Tablo 5a): gizli katmanlar (16,), (32,), (64,), (64,32), (128,64); ReLU/tanh; LR Adam/AdamW için 1e-4–1e-2, SGD için 1e-3–1e-1 (log-uniform); weight decay 0, 1e-5, 1e-4, 1e-3; batch 32/64/128; Standard/MinMax/Robust; dropout 0/0,2; kırpma yok/var. SGD'nin aynı öğrenme oranında yavaş yakınsama olasılığı nedeniyle SGD için öğrenme oranı aralığı bir büyüklük mertebesi yukarı kaydırılmıştır.
+`ParameterSampler` (random_state = 31045) ile her optimizer için tam iki aday olmak üzere toplam altı aday örneklenmiş (Tablo 5b) ve nested CV'den önce `configs/random_configs.json` dosyasına kaydedilmiştir. Arama uzayı (Ek B, Tablo 5a): gizli katmanlar (16,), (32,), (64,), (64,32), (128,64); ReLU/tanh; LR Adam/AdamW için 1e-4–1e-2, SGD için 1e-3–1e-1 (log-uniform); weight decay 0, 1e-5, 1e-4, 1e-3; batch 32/64/128; Standard/MinMax/Robust; dropout 0/0,2; kırpma yok/var. SGD'nin aynı öğrenme oranında yavaş yakınsama olasılığı nedeniyle SGD için öğrenme oranı aralığı bir büyüklük mertebesi yukarı kaydırılmıştır.
 
 **Tablo 5b.** Örneklenen R1–R6 adayları (tek `RandomState(31045)` akışı, sırayla SGD → Adam → AdamW; planlayıcı tüm adaylarda açık). Adaylar `configs/random_configs.json` dosyasına yazılmış ve nested CV'den önce commit edilmiştir; örneklenen hiçbir aday sonradan değiştirilmemiştir.
 
@@ -216,7 +232,7 @@ Tüm deney (150 MLP eğitimi ve referans modeller) CPU üzerinde toplam 172 sani
 
 ### 4.3 Hipotezlerin iç CV sonuçlarına göre değerlendirilmesi
 
-Aşağıdaki karşılaştırmalar tüm development iç CV değerlerine dayanmaktadır. Adaylar arasındaki farkların büyük bölümü kat SD'lerinden (≈0,04–0,05) küçüktür; bu nedenle bulgular eğilim olarak yorumlanmalıdır.
+Aşağıdaki karşılaştırmalar tüm development iç CV değerlerine dayanmaktadır (Tablo 4b, Tablo 5c, Şekil 5). Adaylar arasındaki farkların büyük bölümü kat SD'lerinden (≈0,04–0,05) küçüktür; bu nedenle bulgular eğilim olarak yorumlanmalıdır.
 
 - **H1 (ölçekleme/kırpma): kısmen desteklendi.** MinMaxScaler (M4: 0,4312) StandardScaler'ın (M1: 0,4394) gerisinde kalmıştır. Otomatik aramada RobustScaler + kırpma kullanan R4 en yüksek otomatik skoru (0,4353) verirken aynı kombinasyonu kullanan R5 en düşük skoru (0,4074) vermiştir; kırpma/robust ölçeklemenin tek başına belirleyici olmadığı, diğer hiperparametrelerle etkileştiği görülmektedir.
 - **H2 (optimizer): yakınsama hızı açısından desteklendi, AP açısından zayıf.** LR = 0,001 ile SGD+Momentum (M3) ortalama 128 epoch'ta en iyi noktasına ulaşmış, 12 eğitimin 7'sinde 150 epoch sınırına dayanmış ve Adam/AdamW'ye göre yaklaşık 3 kat uzun sürmüştür; buna karşın AP kaybı küçüktür (0,4318). Daha büyük LR ile SGD (R1, LR = 0,027) 17,7 epoch'ta yakınsamıştır. Adam (M2) ile AdamW (M1) neredeyse aynı sonucu vermiştir; WD = 1e-4 düzeyinde ayrık ve bağlı weight decay arasındaki fark ihmal edilebilir kalmıştır.
@@ -227,7 +243,24 @@ Aşağıdaki karşılaştırmalar tüm development iç CV değerlerine dayanmakt
 
 ## 5. Nested CV Bulguları
 
-Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kat bazlı ham sonuçlar (seçilen aday, iç CV AP, tüm metrikler ve TP/FP/FN) Ek B'de Tablo 6'da verilmiştir. Dış kat 2'de seçilen M3'ün refit eğitimi 150 epoch sınırına ulaşmıştır (yakınsama uyarısı).
+Kat bazlı ham sonuçlar Tablo 6'da, üç kat üzerinden özet Tablo 7'de verilmiştir. Dış kat 2'de seçilen M3'ün refit eğitimi 150 epoch sınırına ulaşmıştır (yakınsama uyarısı).
+
+**Tablo 6.** Dış kat bazlı sonuçlar (eşik 0,50). Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kaynak: `results/outer_cv_results.csv`.
+
+| Dış kat | Yöntem | Seçilen | İç CV AP | AP | ROC-AUC | F1 | Sensitivity | Specificity | TP / FP / FN |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | Manuel arama | M5 | 0,4676 | 0,3666 | 0,7500 | 0,2674 | 0,1901 | 0,9714 | 23 / 28 / 98 |
+| 1 | Otomatik arama | R6 | 0,4664 | 0,3739 | 0,7485 | 0,2874 | 0,1983 | 0,9775 | 24 / 22 / 97 |
+| 1 | LogisticRegression | – | – | 0,3915 | 0,7587 | 0,3333 | 0,2397 | 0,9755 | 29 / 24 / 92 |
+| 1 | Dummy | – | – | 0,1101 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 121 |
+| 2 | Manuel arama | M3 | 0,3910 | 0,4554 | 0,7918 | 0,3185 | 0,2083 | 0,9877 | 25 / 12 / 95 |
+| 2 | Otomatik arama | R6 | 0,3771 | 0,4500 | 0,7810 | 0,3855 | 0,2667 | 0,9857 | 32 / 14 / 88 |
+| 2 | LogisticRegression | – | – | 0,4478 | 0,7745 | 0,4192 | 0,2917 | 0,9877 | 35 / 12 / 85 |
+| 2 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
+| 3 | Manuel arama | M2 | 0,4136 | 0,4659 | 0,7987 | 0,3478 | 0,2333 | 0,9867 | 28 / 13 / 92 |
+| 3 | Otomatik arama | R2 | 0,4149 | 0,4290 | 0,7888 | 0,3333 | 0,2250 | 0,9847 | 27 / 15 / 93 |
+| 3 | LogisticRegression | – | – | 0,4207 | 0,7890 | 0,3432 | 0,2417 | 0,9796 | 29 / 20 / 91 |
+| 3 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
 
 **Tablo 7.** Dış CV Mean ± SD (n = 3, örnek SD). Kaynak: `results/outer_cv_summary_formatted.csv`.
 
@@ -238,11 +271,9 @@ Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-
 | LogisticRegression | 0,420 ± 0,028 | 0,774 ± 0,015 | 0,365 ± 0,047 | 0,258 ± 0,029 | 0,981 ± 0,006 | 0,619 ± 0,018 | 0,628 ± 0,104 | 0,902 ± 0,009 |
 | Dummy (prior) | 0,110 ± 0,000 | 0,500 ± 0,000 | 0,000 ± 0,000 | 0,000 ± 0,000 | 1,000 ± 0,000 | 0,500 ± 0,000 | 0,000 ± 0,000 | 0,890 ± 0,000 |
 
-**Şekil 5b.** Dış CV AP: kat bazlı değerler ve ortalama ± SD. `figures/outer_cv_ap.png`
+**Yorum.** Her iki arama prosedürü Dummy alt sınırının (AP ≈ 0,11) yaklaşık dört katı AP'ye ulaşmıştır. Buna karşın manuel arama, otomatik arama ve LogisticRegression arasındaki AP farkları katlar arası SD'nin çok altındadır; MLP'nin doğrusal modele belirgin üstünlüğü gösterilememiştir. Eşik 0,50'de tüm modeller yüksek özgüllük (≈0,98) fakat düşük duyarlılık (≈0,21–0,26) üretir; dengesiz yapıda olasılıklar nadiren 0,50'yi aşar. Accuracy (≈0,90) Dummy'nin 0,890'ından neredeyse ayırt edilemez; bu, accuracy'nin neden birincil metrik olmadığını doğrular.
 
-**Yorum.** Her iki arama prosedürü de Dummy alt sınırının (AP ≈ 0,11) yaklaşık dört katı AP'ye ulaşmıştır; dolayısıyla model anlamlı bir sıralama bilgisi öğrenmektedir. Buna karşın manuel arama (0,429 ± 0,055), otomatik arama (0,418 ± 0,039) ve doğrusal referans LogisticRegression (0,420 ± 0,028) arasındaki AP farkları katlar arası SD'nin çok altındadır; bu veride MLP'nin doğrusal modele karşı belirgin bir üstünlüğü gösterilememiştir. Eşik 0,50'de tüm modeller yüksek özgüllük (≈0,98) fakat düşük duyarlılık (≈0,21–0,26) üretmektedir; bu, dengesiz sınıf yapısında olasılıkların nadiren 0,50'yi aşmasının bir sonucudur. Accuracy değerlerinin (≈0,90) Dummy'nin 0,890'ından neredeyse ayırt edilemez olması, accuracy'nin bu problemde neden birincil metrik olarak kullanılmadığını doğrulamaktadır.
-
-Dış katlarda seçilen adaylar tutarlı değildir: manuel arama sırasıyla M5, M3 ve M2'yi; otomatik arama R6, R6 ve R2'yi seçmiştir. İç CV'de adaylar arasındaki farkların küçük olması, seçimin kat değişimine duyarlı olmasına yol açmaktadır. Ayrıca dış kat 1'de iç CV AP değerleri (≈0,47) outer-eval AP'sinden (≈0,37) belirgin biçimde yüksektir; seçilen adayın iç CV skoru, seçim yanlılığı nedeniyle iyimserdir ve bu durum nested CV kullanılmasının gerekçesini somut olarak göstermektedir. Dış kat sonuçları hiçbir konfigürasyonun değiştirilmesinde veya nihai stratejinin seçiminde kullanılmamıştır.
+Dış katlarda seçilen adaylar tutarlı değildir (manuel: M5, M3, M2; otomatik: R6, R6, R2); adaylar arasındaki farklar küçük olduğundan seçim kat değişimine duyarlıdır. Dış kat 1'de iç CV AP (≈0,47) outer-eval AP'sinden (≈0,37) belirgin biçimde yüksektir: seçilen adayın iç CV skoru seçim yanlılığı nedeniyle iyimserdir (kat bazlı grafik: Ek B, Şekil 5b). Dış kat sonuçları hiçbir konfigürasyonun değiştirilmesinde veya nihai stratejinin seçiminde kullanılmamıştır.
 
 ### 5.1 Tüm development üzerinde nihai seçim
 
@@ -254,11 +285,11 @@ Dış katlarda seçilen adaylar tutarlı değildir: manuel arama sırasıyla M5,
 
 ### 6.1 Nihai konfigürasyon, eğitim ve kilitleme
 
-Bölüm 5.1'deki kurala göre seçilen M2 konfigürasyonu (Adam, (32,), ReLU, LR = 0,001, WD = 1e-4, batch 64, StandardScaler, dropout 0, kırpma yok, planlayıcı açık) tüm development verisi üzerinde eğitilmiştir. Development, 2.800 örneklik fit alt kümesine ve 495 örneklik tabakalı early-stop alt kümesine ayrılmıştır (seed 31044). Ön işleme yalnızca fit alt kümesinde öğrenilmiştir. Aynı konfigürasyon önceden belirlenen üç ağırlık başlangıç seed'iyle eğitilmiş; ana seed 31046 olarak kilitlemeden önce ilan edilmiştir.
+Seçilen M2 konfigürasyonu tüm development verisinde eğitilmiştir: 2.800 örneklik fit alt kümesi ve 495 örneklik tabakalı early-stop alt kümesi (seed 31044); ön işleme yalnızca fit alt kümesinde öğrenilmiştir. Konfigürasyon önceden belirlenen üç ağırlık başlangıç seed'iyle eğitilmiş; ana seed 31046 kilitlemeden önce ilan edilmiştir.
 
 Üç eğitim de (Ek B, Tablo 8a) en iyi epoch 18–20'de, early stopping ile durmuştur; yakınsama uyarısı veya başarısız eğitim yoktur. Öğrenme oranı iki kez yarıya inmiş, ancak her iki düşüş de en iyi epoch'tan sonra gerçekleşmiştir (Ek B, Şekil 4b). Bu, H4 bulgusuyla tutarlıdır. Her seed için model ağırlıkları, fit edilmiş ön işleme nesnesi ve öğrenilmiş dönüşüm istatistikleri (medyanlar, ölçekleyici ortalama/SD değerleri, kategori sözlüğü) test etiketleri okunmadan `models/` klasörüne kaydedilmiştir. Nihai hiperparametreler, eşik (0,50), seed'ler ve kitaplık sürümleri `results/final_hyperparameters.json` dosyasındadır.
 
-**Kilitleme kaydı.** Nihai kod `8a81da2` (17.11.2026 19:46) commit'inde sabitlenmiş; etiketsiz `test_predictions_locked.csv` (824 satır; üç MLP seed'i ve LogisticRegression için olasılık ve sınıf tahmini), sha256 manifest'i (`0acd5903…b451d1`) ve modeller `cb19a1c` (18.11.2026 10:57) commit'iyle yüklenmiştir. Test metrikleri ancak bundan sonra `50b5b02` commit'inde hesaplanmıştır (Ek B).
+**Kilitleme kaydı.** Nihai kod `8a81da2` (17.11.2026 19:46) commit'inde sabitlenmiş; etiketsiz `test_predictions_locked.csv` (824 satır; üç MLP seed'i ve LogisticRegression için olasılık ve sınıf tahmini), sha256 manifest'i (`0acd5903…b451d1`) ve modeller `cb19a1c` (18.11.2026 10:57) commit'iyle yüklenmiştir. Test metrikleri ancak bundan sonra `50b5b02` commit'inde hesaplanmıştır (Ek B, Tablo 8c).
 
 Değerlendirme kodu, kilitli dosya git'te commit edilmemişse, commit'ten sonra değiştirilmişse veya sha256 manifest ile uyuşmuyorsa test etiketlerini okumayı reddeder. Test etiketleri kamuya açık olduğundan bu işlem kör test garantisi değil, zaman sıralı bir deney kaydıdır.
 
@@ -278,15 +309,7 @@ Değerlendirme kodu, kilitli dosya git'te commit edilmemişse, commit'ten sonra 
 | Balanced Accuracy | 0,601 | 0,606 | 0,500 |
 | TP / FP / TN / FN | 20 / 15 / 719 / 70 | 21 / 15 / 719 / 69 | 0 / 0 / 734 / 90 |
 
-**Tablo 8b.** Eşleştirilmiş bootstrap farkı (MLP − LogisticRegression; aynı 1.000 yeniden örneklem). Kaynak: `results/test_bootstrap_diff.csv`.
-
-| Metrik | Fark | %95 GA | Fark ≤ 0 olan örneklem oranı |
-|---|---|---|---|
-| AP | +0,016 | [−0,014; +0,041] | 0,19 |
-| ROC-AUC | +0,007 | [−0,009; +0,022] | 0,18 |
-| F1 | −0,013 | [−0,062; +0,031] | 0,74 |
-
-MLP her iki sıralama metriğinde (AP, ROC-AUC) LogisticRegression'dan biraz yüksek, eşik tabanlı F1'de ise biraz düşüktür. Üç farkın da güven aralığı sıfırı içermektedir; bu test kümesinde iki model **istatistiksel olarak ayırt edilememektedir**. İki modelin 0,50 eşiğindeki sınıf tahminleri 824 örneğin yalnızca 5'inde farklıdır. Her iki model de Dummy alt sınırının (AP = 0,109) yaklaşık 3,7 katı AP'ye ulaşmıştır. Accuracy (0,897) ise Dummy'nin 0,891 değerinden neredeyse ayırt edilemez; bu sonuç, dengesiz problemde accuracy'nin neden birincil metrik olarak kullanılmadığını bir kez daha göstermektedir.
+Tablo 8'e göre MLP sıralama metriklerinde (AP, ROC-AUC) LogisticRegression'dan biraz yüksek, eşik tabanlı F1'de biraz düşüktür. Eşleştirilmiş bootstrap farkları (MLP − LogisticRegression; Ek B, Tablo 8b): AP +0,016 [−0,014; +0,041], ROC-AUC +0,007 [−0,009; +0,022], F1 −0,013 [−0,062; +0,031]. Üç aralık da sıfırı içerir; bu test kümesinde iki model **istatistiksel olarak ayırt edilememektedir**. İki modelin 0,50 eşiğindeki sınıf tahminleri 824 örneğin yalnızca 5'inde farklıdır. Her iki model Dummy alt sınırının (AP = 0,109) yaklaşık 3,7 katı AP'ye ulaşmıştır; accuracy (0,897) ise Dummy'nin 0,891 değerinden neredeyse ayırt edilemez.
 
 **Şekil 6.** Bağımsız test karışıklık matrisleri (eşik 0,50): MLP ve LogisticRegression. `figures/test_confusion.png`
 
@@ -307,26 +330,16 @@ MLP her iki sıralama metriğinde (AP, ROC-AUC) LogisticRegression'dan biraz yü
 | 31246 | 0,396 | 0,747 | 0,306 | 0,211 | 0,980 | 0,595 | 0,559 |
 | **Mean ± SD** | **0,403 ± 0,006** | **0,746 ± 0,002** | **0,312 ± 0,007** | **0,215 ± 0,006** | **0,980 ± 0,001** | **0,597 ± 0,003** | **0,569 ± 0,009** |
 
-Seed'e bağlı değişkenlik çok küçüktür: AP için SD = 0,006, bootstrap SD'sinin (0,054) yaklaşık onda biridir. Bu nedenle test sonucundaki belirsizliğin baskın kaynağı ağırlık başlangıcı değil, küçük test kümesinin örnekleme değişkenliğidir. Ana seed üç seed arasında en yüksek AP'yi vermiştir, ancak fark (0,406'ya karşı ortalama 0,403) ihmal edilebilir düzeydedir.
+Seed'e bağlı değişkenlik çok küçüktür (Tablo 9): AP için SD = 0,006, bootstrap SD'sinin (0,054) yaklaşık onda biridir. Bu nedenle test sonucundaki belirsizliğin baskın kaynağı ağırlık başlangıcı değil, küçük test kümesinin örnekleme değişkenliğidir. Ana seed üç seed arasında en yüksek AP'yi vermiştir, ancak fark (0,406'ya karşı ortalama 0,403) ihmal edilebilir düzeydedir.
 
 ### 6.4 Hata analizi
 
 Ana modelde 15 yanlış pozitif (FP) ve 70 yanlış negatif (FN) vardır. Gerçek pozitiflerin %78'i kaçırılmıştır. Kaynak: `results/test_error_analysis.csv`, `results/test_fn_by_category.csv`, `results/test_calibration_bins.csv`.
 
-**Tablo 10.** Test kümesindeki gerçek pozitifler içinde `poutcome` ve `contact` gruplarına göre kaçırılma (FN) oranı.
-
-| Grup | Pozitif sayısı | FN | FN oranı |
-|---|---|---|---|
-| poutcome = success | 22 | 2 | %9 |
-| poutcome = failure | 17 | 17 | %100 |
-| poutcome = nonexistent | 51 | 51 | %100 |
-| contact = cellular | 74 | 55 | %74 |
-| contact = telephone | 16 | 15 | %94 |
-
-- **FN'ler:** Model, 0,50 eşiğinde yalnızca önceki kampanyası başarılı (`poutcome = success`) müşterileri pozitif tahmin edebilmektedir. Daha önce hiç aranmamış veya önceki kampanyası başarısız olan 68 pozitifin tamamı kaçırılmıştır. En emin FN'ler (olasılık ≈ 0,02–0,03) ortak bir profile sahiptir: daha önce temas yok (`pdays = 999`), 10'undan 8'ine `telephone` ile ulaşılmış, çoğunlukla Mayıs–Haziran ayları ve yüksek faiz/istihdam dönemi (`euribor3m` ≈ 4,1–5,0; `nr.employed` ≈ 5.191–5.228). EDA'da bu dönemin genel pozitif oranının düşük olduğu görülmüştü. Model bu müşterilere ortalama riske yakın düşük bir olasılık vermektedir. Görüşme öncesi özellikler bu grubun içindeki aboneleri ayırt edecek bilgi içermemektedir; bu bilgi büyük ölçüde modelden çıkarılan `duration` değişkeninde bulunmaktadır.
-- **FP'ler:** En yüksek olasılıklı 10 FP'nin 9'u yakın zamanda temas kurulmuş (`pdays` < 20) müşterilerdir; 7'sinin önceki kampanyası başarılıdır. Hepsi düşük faiz döneminde (`euribor3m` < 1,3) aranmıştır. Model bu güçlü sinyale dayanarak yüksek olasılık (0,63–0,80) vermiş, ancak bu müşteriler abone olmamıştır. Bu hatalar modelin öğrendiği örüntüyle tutarlıdır ve öngörülebilir hatalardır.
-- **Kalibrasyon (betimsel):** Testte ortalama tahmin olasılığı 0,106, gözlenen pozitif oranı 0,109'dur. Olasılık beşte birlik dilimlerinde ortalama tahmin ile gözlenen oran birbirine yakındır; en üst dilimde 0,339'a karşı 0,321. Model olasılıkları sistematik olarak şişirmemekte veya küçültmemektedir. Düşük duyarlılığın nedeni kalibrasyon bozukluğu değil, pozitiflerin çoğuna gerçekten düşük olasılık düşmesi ve 0,50 eşiğinin bu dengesiz problemde yüksek olmasıdır.
-- **Eşik:** Eşiği düşürmek duyarlılığı artırır, ancak kesinliği azaltır. Ödev kuralları gereği eşik yalnızca development iç CV tahminleriyle seçilebilirdi; bu çalışmada eşik araması yapılmamış ve test sonuçlarına bakılarak eşik değiştirilmemiştir.
+- **FN'ler:** Model, 0,50 eşiğinde yalnızca önceki kampanyası başarılı (`poutcome = success`) müşterileri pozitif tahmin edebilmektedir: bu gruptaki 22 pozitifin 20'si yakalanmış, daha önce hiç aranmamış (51) veya önceki kampanyası başarısız (17) 68 pozitifin tamamı kaçırılmıştır (Ek B, Tablo 10). En emin FN'ler (olasılık ≈ 0,02–0,03) ortak bir profile sahiptir: önceki temas yok, 10'undan 8'ine `telephone` ile ulaşılmış, çoğunlukla Mayıs–Haziran ayları ve yüksek faiz dönemi (`euribor3m` ≈ 4,1–5,0). Görüşme öncesi özellikler bu grubun içindeki aboneleri ayırt edecek bilgi içermemektedir; bu bilgi büyük ölçüde modelden çıkarılan `duration` değişkenindedir.
+- **FP'ler:** En yüksek olasılıklı 10 FP'nin 9'u yakın zamanda temas kurulmuş (`pdays` < 20) müşterilerdir; 7'sinin önceki kampanyası başarılıdır ve hepsi düşük faiz döneminde (`euribor3m` < 1,3) aranmıştır. Model bu güçlü sinyale dayanarak yüksek olasılık (0,63–0,80) vermiş, ancak bu müşteriler abone olmamıştır; hatalar modelin öğrendiği örüntüyle tutarlıdır.
+- **Kalibrasyon (betimsel):** Testte ortalama tahmin olasılığı 0,106, gözlenen pozitif oranı 0,109'dur; en üst beşte birlik dilimde 0,339'a karşı 0,321. Düşük duyarlılığın nedeni kalibrasyon bozukluğu değil, pozitiflerin çoğuna gerçekten düşük olasılık düşmesi ve 0,50 eşiğinin bu dengesiz problemde yüksek olmasıdır.
+- **Eşik:** Eşiği düşürmek duyarlılığı artırır, kesinliği azaltır. Eşik yalnızca development iç CV tahminleriyle seçilebilirdi; bu çalışmada eşik araması yapılmamış ve test sonuçlarına bakılarak eşik değiştirilmemiştir.
 
 ## 7. Tartışma
 
@@ -334,39 +347,30 @@ Ana modelde 15 yanlış pozitif (FP) ve 70 yanlış negatif (FN) vardır. Gerçe
 
 İç CV'de en iyi ve en kötü manuel aday arasındaki fark yalnızca 0,011 AP'dir (M2 0,441; M5 0,430). Bu fark katlar arası SD'nin (≈0,045) dörtte biridir. Otomatik adaylarda aralık daha geniştir (R5 0,407; R4 0,435), ancak yine SD mertebesindedir. Dolayısıyla bu veri setinde MLP performansı incelenen hiperparametrelere **düşük duyarlılık** göstermektedir. Sonuçları belirleyen asıl etken, mimari veya optimizer tercihinden çok mevcut özelliklerin taşıdığı sınırlı bilgidir.
 
-En belirgin hiperparametre etkisi performansta değil **yakınsama davranışında** görülmüştür (Bölüm 4.3). LR = 0,001 ile SGD+Momentum (M3) Adam/AdamW'ye göre yaklaşık 6 kat daha fazla epoch ve 3 kat daha uzun süre gerektirmiş, buna karşın AP kaybı küçük kalmıştır. Daha yüksek öğrenme oranlı R1'in hızla yakınsaması, SGD için arama uzayının yukarı kaydırılmasının gerekçesini doğrulamaktadır. Küçük weight decay (1e-4) değerinde Adam ile AdamW pratikte aynı sonucu vermiştir. ReduceLROnPlateau en iyi epoch'tan sonra devreye girdiği için nihai modeli etkilememiştir (H4). Etkili olabilmesi için planlayıcı patience değerinin daha küçük veya erken durdurma patience değerinin daha büyük olması gerekirdi; bu ayarlar ödevde sabitlendiğinden değiştirilmemiştir.
+En belirgin etki performansta değil **yakınsama davranışında** görülmüştür (Bölüm 4.3): LR = 0,001 ile SGD+Momentum (M3) Adam/AdamW'ye göre yaklaşık 6 kat fazla epoch ve 3 kat uzun süre gerektirmiş, AP kaybı küçük kalmıştır. Yüksek öğrenme oranlı R1'in hızla yakınsaması, SGD için arama uzayının yukarı kaydırılmasını doğrular. ReduceLROnPlateau en iyi epoch'tan sonra devreye girdiği için nihai modeli etkilememiştir (H4); etkili olması için planlayıcı patience değerinin daha küçük olması gerekirdi, ancak bu ayarlar ödevde sabittir.
 
 ### 7.2 Aşırı öğrenme ve gereksiz karmaşıklık
 
-Daha büyük mimari (64,32) yaklaşık üç kat fazla parametreyle AP kazancı sağlamamış ve en iyi epoch'a daha erken ulaşmıştır (12,7'ye karşı 19,7). Bu, aynı veriden daha hızlı aşırı öğrendiğini göstermektedir. Eğitim eğrilerinde (Şekil 4, 4b) eğitim kaybı düşmeye devam ederken early-stop kaybının yaklaşık 20. epoch'tan sonra yatay seyretmesi aynı eğilimi yansıtmaktadır. Erken durdurma ve en iyi ağırlıkları geri yükleme bu aşırı öğrenmeyi etkin biçimde sınırlamıştır. Daha önemlisi, 2.017 parametreli tek katmanlı MLP bile hem dış CV'de hem bağımsız testte doğrusal LogisticRegression'dan ayırt edilemeyen sonuçlar üretmiştir. Bu veri ve özellik setinde doğrusal olmayan modelleme kapasitesi anlamlı bir ek bilgi sağlamamaktadır. Hedefle ilişkili sinyal büyük ölçüde birkaç güçlü ve doğrusala yakın özellikte (`poutcome`, `nr.employed`, `euribor3m`) toplanmıştır. Uygulamada yorumlanabilirlik ve maliyet açısından LogisticRegression eşdeğer performansla tercih edilebilir.
+Daha büyük mimari (64,32) yaklaşık üç kat fazla parametreyle AP kazancı sağlamamış ve en iyi epoch'a daha erken ulaşmıştır (12,7'ye karşı 19,7). Eğitim eğrilerinde (Şekil 4; Ek B, Şekil 4b) eğitim kaybı düşmeye devam ederken early-stop kaybı yaklaşık 20. epoch'tan sonra yatay seyreder; erken durdurma ve en iyi ağırlıkların geri yüklenmesi aşırı öğrenmeyi sınırlamıştır. 2.017 parametreli tek katmanlı MLP bile dış CV'de ve bağımsız testte LogisticRegression'dan ayırt edilemeyen sonuçlar üretmiştir: sinyal büyük ölçüde birkaç güçlü ve doğrusala yakın özellikte (`poutcome`, `nr.employed`, `euribor3m`) toplanmıştır. Uygulamada yorumlanabilirlik ve maliyet açısından LogisticRegression tercih edilebilir.
 
 ### 7.3 Manuel ve otomatik arama
 
-Eşit aday bütçesinde (6'ya 6) manuel arama dış CV'de biraz daha yüksek AP (0,429'a karşı 0,418), otomatik arama ise biraz daha yüksek F1 ve duyarlılık üretmiştir. Farklar SD'lerin altındadır; iki stratejiden birinin daha iyi genellediği söylenemez. Manuel aramanın avantajı, adayların tek-faktör kontrollü olması sayesinde her hipotezin doğrudan test edilebilmesidir. Otomatik arama ise yalnızca altı adayla geniş bir uzayı çok seyrek örneklemiştir; örneğin (128,64) mimarisi hiç örneklenmemiştir. Her iki stratejide de dış katlarda seçilen adaylar değişkendir (manuel: M5, M3, M2; otomatik: R6, R6, R2). Adaylar arasındaki farklar küçük olduğunda seçim, kat bölünmesindeki rastlantısallığa duyarlı hâle gelmektedir.
+Eşit aday bütçesinde (6'ya 6) manuel arama dış CV'de biraz daha yüksek AP (0,429'a karşı 0,418), otomatik arama biraz daha yüksek F1 ve duyarlılık üretmiştir; farklar SD'lerin altındadır ve iki stratejiden birinin daha iyi genellediği söylenemez. Manuel aramanın avantajı, tek-faktör kontrollü adaylarla her hipotezin doğrudan test edilebilmesidir. Otomatik arama altı adayla geniş bir uzayı çok seyrek örneklemiştir; örneğin (128,64) mimarisi hiç örneklenmemiştir.
 
 ### 7.4 Genelleme: iç CV, dış CV ve bağımsız test
 
-**Tablo 11.** Aynı yöntemin üç farklı değerlendirme düzeyinde AP değeri.
+Üç düzey ayrı yorumlanmalıdır (Ek B, Tablo 11). **Development iç CV skoru** (M2: 0,441 ± 0,046) seçim için kullanılmıştır; 12 aday arasından en yükseğinin seçilmesi nedeniyle iyimser yanlıdır (Varma ve Simon, 2006). **Dış CV** (0,429 ± 0,055), seçim prosedürünün tamamının genelleme performansını tahmin eder; bu çalışmanın asıl performans tahminidir. **Bağımsız test** (0,406) ise tek bir nihai modelin, hiç kullanılmamış 824 örnekteki performansıdır.
 
-| Düzey | Manuel arama / M2 | LogisticRegression |
-|---|---|---|
-| Development iç CV (seçim skoru, M2) | 0,441 ± 0,046 | – |
-| Dış CV (n = 3, Mean ± SD) | 0,429 ± 0,055 | 0,420 ± 0,028 |
-| Bağımsız test [%95 GA] | 0,406 [0,313; 0,519] | 0,390 [0,300; 0,509] |
-
-Üç düzey ayrı yorumlanmalıdır. **Development iç CV skoru** seçim için kullanılmıştır. 12 aday arasından en yükseğinin seçilmesi nedeniyle iyimser yanlıdır (seçim yanlılığı; Varma ve Simon, 2006). Bu yanlılık dış kat 1'de açıkça görülmüştür: iç CV AP ≈ 0,47, dış değerlendirme AP ≈ 0,37. **Dış CV**, seçim prosedürünün tamamının genelleme performansını tahmin eder; bu çalışmanın asıl performans tahminidir. **Bağımsız test** ise tek bir nihai modelin, hiç kullanılmamış 824 örnekteki performansıdır.
-
-Test AP'si (0,406), development iç CV skorundan (0,441) düşük, dış CV tahmininin (0,429 ± 0,055) ise içindedir. LogisticRegression için de benzer bir düşüş görülmektedir (0,420'den 0,390'a). Her iki modelde benzer düşüşün görülmesi, farkın MLP'ye özgü bir aşırı öğrenmeden değil, büyük olasılıkla bu test örnekleminin biraz daha zor olmasından kaynaklandığını düşündürmektedir. Testteki AP güven aralığının genişliği (≈ ±0,10) dikkate alındığında, dış CV ile test sonuçları arasındaki fark örnekleme değişkenliğiyle açıklanabilecek düzeydedir. Bu tutarlılık, nested CV'nin genelleme performansını iyimser göstermediğini desteklemektedir.
+Test AP'si development iç CV skorundan düşük, dış CV tahmininin ise içindedir. LogisticRegression için de benzer bir düşüş görülmektedir (dış CV 0,420; test 0,390). Bu, farkın MLP'ye özgü bir aşırı öğrenmeden değil, büyük olasılıkla bu test örnekleminin biraz daha zor olmasından kaynaklandığını düşündürür. Testteki AP güven aralığının genişliği (≈ ±0,10) dikkate alındığında fark örnekleme değişkenliğiyle açıklanabilir; bu tutarlılık, nested CV'nin genelleme performansını iyimser göstermediğini destekler.
 
 ### 7.5 Sınırlamalar
 
-- **Sınırlı belirsizlik temsili:** Dış CV yalnızca 3 kattan oluşur. Katlar bağımsız tekrarlar olmadığından Mean ± SD bir güven aralığı değildir ve n = 3 ile belirsizlik ancak kabaca temsil edilir.
-- **Küçük test kümesi:** Testte yalnızca 90 pozitif örnek vardır. Bootstrap aralıkları genişliğini koruyor (AP için ≈ 0,21), bu nedenle modeller arasındaki küçük farklar test edilememektedir.
-- **Sınıf dengesizliği ve eşik:** Pozitif oranı %11'dir. Sınıf ağırlıklandırması ve eşik optimizasyonu yapılmadığından 0,50 eşiğinde duyarlılık düşüktür (≈0,22). Eşik, maliyete duyarlı bir iş hedefine göre development iç CV tahminleriyle seçilseydi duyarlılık artırılabilirdi.
-- **Kişi-bağımsız ve zamansal genelleme:** Veride müşteri kimliği yoktur ve bölünme rastgeledir. Aynı müşterinin görüşmeleri farklı kümelere düşebilir. Makroekonomik değişkenler dönemi kodladığından, rastgele bölünme gelecekteki kampanyalara genellemeyi kanıtlamaz; zamana göre bölünmüş bir değerlendirme daha düşük performans verebilir.
-- **Kopyalar:** `duration` çıkarıldıktan sonra 19 satır kopya hâline gelmiştir; bunların bir kısmı development ile test arasında paylaşılmaktadır.
+- **Sınırlı belirsizlik temsili:** Dış CV yalnızca 3 kattan oluşur; katlar bağımsız tekrarlar olmadığından Mean ± SD bir güven aralığı değildir.
+- **Küçük test kümesi:** Testte yalnızca 90 pozitif vardır; bootstrap aralıkları geniştir (AP için ≈ 0,21) ve modeller arasındaki küçük farklar test edilememektedir.
+- **Sınıf dengesizliği ve eşik:** Sınıf ağırlıklandırması ve eşik optimizasyonu yapılmadığından 0,50 eşiğinde duyarlılık düşüktür (≈0,22); eşik development iç CV tahminleriyle seçilseydi artırılabilirdi.
+- **Kişi-bağımsız ve zamansal genelleme:** Müşteri kimliği yoktur ve bölünme rastgeledir; `duration` çıkarıldıktan sonra oluşan 19 kopya satırın bir kısmı development ile test arasında paylaşılır. Makroekonomik değişkenler dönemi kodladığından zamana göre bölünmüş bir değerlendirme daha düşük performans verebilir.
 - **Arama kapsamı:** Otomatik arama yalnızca 6 adayla sınırlıdır. "unknown" için kat-içi imputation alternatifi, sınıf ağırlıklandırması ve eşik araması değerlendirilmemiştir.
-- **Kör test değil:** Test etiketleri kamuya açıktır. Kilitli commit kör test garantisi sağlamaz; tahminlerin metriklerden önce sabitlendiğini gösteren zaman sıralı bir kayıttır.
+- **Kör test değil:** Test etiketleri kamuya açıktır; kilitli commit yalnızca tahminlerin metriklerden önce sabitlendiğini gösteren zaman sıralı bir kayıttır.
 
 ## 8. Sonuç
 
@@ -425,38 +429,17 @@ Bu ekteki tablo ve şekiller ana metinde anılan ayrıntılardır; tamamı depod
 | Seed kararlılığı için nihai seed'ler | 31046, 31146, 31246 |
 | Bootstrap | 31047 |
 
-**Tablo 1b.** Sayısal özellikler (development). IQR dışı: [Q1 − 1,5·IQR, Q3 + 1,5·IQR] aralığı dışında kalan gözlem sayısı.
+**Tablo 2.** Eğitim bütçesi.
 
-| Özellik | Ortalama | Medyan | SD | IQR | Min–Maks | Çarpıklık | IQR dışı n (%) |
-|---|---|---|---|---|---|---|---|
-| age | 40,03 | 38,0 | 10,36 | 15,0 | 18–88 | 0,74 | 32 (%1,0) |
-| campaign | 2,54 | 2,0 | 2,58 | 2,0 | 1–35 | 3,98 | 186 (%5,6) |
-| pdays | 961,93 | 999 | 188,27 | 0 | 0–999 | −4,88 | 123 (%3,7)* |
-| previous | 0,19 | 0 | 0,53 | 0 | 0–6 | 4,07 | 473 (%14,4)* |
-| emp.var.rate | 0,09 | 1,1 | 1,56 | 3,2 | −3,4–1,4 | −0,74 | 0 |
-| cons.price.idx | 93,58 | 93,80 | 0,58 | 0,92 | 92,20–94,77 | −0,22 | 0 |
-| cons.conf.idx | −40,50 | −41,8 | 4,61 | 6,3 | −50,8–(−26,9) | 0,28 | 36 (%1,1) |
-| euribor3m | 3,63 | 4,857 | 1,73 | 3,62 | 0,635–5,045 | −0,73 | 0 |
-| nr.employed | 5.166,7 | 5.191,0 | 73,9 | 129,0 | 4.963,6–5.228,1 | −1,09 | 0 |
+| Hesap | Eğitim sayısı |
+|---|---|
+| 3 dış × 3 iç × (6 manuel + 6 otomatik) | 108 |
+| Dış katlarda seçilen iki yöntemin yeniden eğitimi | 6 |
+| Tam development üzerinde 3 iç × 12 aday | 36 |
+| Nihai model, 3 seed | 3 |
+| **Toplam MLP eğitimi** | **153** |
 
-\*`pdays` ve `previous` için IQR sıfırdır; "aykırı" olarak işaretlenen değerler aslında daha önce temas kurulmuş müşterilerdir ve gerçek aykırı değer değildir.
-
-**Tablo 1c.** Özel kodlu değerler (development). Diğer kategorik değişkenlerde "unknown" bulunmamaktadır; sayısal eksik değer yoktur.
-
-| Değişken | Kod | n | Oran |
-|---|---|---|---|
-| default | unknown | 627 | %19,03 |
-| education | unknown | 144 | %4,37 |
-| housing | unknown | 87 | %2,64 |
-| loan | unknown | 87 | %2,64 |
-| job | unknown | 33 | %1,00 |
-| marital | unknown | 8 | %0,24 |
-| pdays | 999 (önceki temas yok) | 3.172 | %96,27 |
-| poutcome | nonexistent | 2.822 | %85,64 |
-
-**Şekil 2b.** Sayısal özelliklerin histogramları ve boxplot'ları. `figures/eda_numeric_hist.png`, `figures/eda_numeric_box.png`
-
-**Şekil 2d.** Kategorik özelliklerin frekans dağılımları ("unknown" dahil). `figures/eda_categorical_bars.png`
+**Şekil 2c.** Kategorik özelliklerin frekans dağılımları ("unknown" dahil). `figures/eda_categorical_bars.png`
 
 **Tablo 3.** Eğitim ayarları.
 
@@ -484,23 +467,6 @@ Bu ekteki tablo ve şekiller ana metinde anılan ayrıntılardır; tamamı depod
 | Dropout | 0,0, 0,2 |
 | Aykırı değer kırpma | Yok, eğitim katında öğrenilmiş (1.–99. yüzdelik) |
 
-**Tablo 6.** Dış kat bazlı sonuçlar (eşik 0,50). Her dış katta iç CV ile seçilen aday outer-train'de yeniden eğitilip outer-eval'de bir kez ölçülmüştür. Kaynak: `results/outer_cv_results.csv`.
-
-| Dış kat | Yöntem | Seçilen | İç CV AP | AP | ROC-AUC | F1 | Sensitivity | Specificity | TP / FP / FN |
-|---|---|---|---|---|---|---|---|---|---|
-| 1 | Manuel arama | M5 | 0,4676 | 0,3666 | 0,7500 | 0,2674 | 0,1901 | 0,9714 | 23 / 28 / 98 |
-| 1 | Otomatik arama | R6 | 0,4664 | 0,3739 | 0,7485 | 0,2874 | 0,1983 | 0,9775 | 24 / 22 / 97 |
-| 1 | LogisticRegression | – | – | 0,3915 | 0,7587 | 0,3333 | 0,2397 | 0,9755 | 29 / 24 / 92 |
-| 1 | Dummy | – | – | 0,1101 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 121 |
-| 2 | Manuel arama | M3 | 0,3910 | 0,4554 | 0,7918 | 0,3185 | 0,2083 | 0,9877 | 25 / 12 / 95 |
-| 2 | Otomatik arama | R6 | 0,3771 | 0,4500 | 0,7810 | 0,3855 | 0,2667 | 0,9857 | 32 / 14 / 88 |
-| 2 | LogisticRegression | – | – | 0,4478 | 0,7745 | 0,4192 | 0,2917 | 0,9877 | 35 / 12 / 85 |
-| 2 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
-| 3 | Manuel arama | M2 | 0,4136 | 0,4659 | 0,7987 | 0,3478 | 0,2333 | 0,9867 | 28 / 13 / 92 |
-| 3 | Otomatik arama | R2 | 0,4149 | 0,4290 | 0,7888 | 0,3333 | 0,2250 | 0,9847 | 27 / 15 / 93 |
-| 3 | LogisticRegression | – | – | 0,4207 | 0,7890 | 0,3432 | 0,2417 | 0,9796 | 29 / 20 / 91 |
-| 3 | Dummy | – | – | 0,1093 | 0,5000 | 0,0000 | 0,0000 | 1,0000 | 0 / 0 / 120 |
-
 **Tablo 8a.** Nihai eğitimler. Kaynak: `results/final_training_summary.csv`.
 
 | Seed | Parametre | En iyi / durulan epoch | En iyi early-stop BCE | Son LR |
@@ -518,3 +484,31 @@ Bu ekteki tablo ve şekiller ana metinde anılan ayrıntılardır; tamamı depod
 | `8a81da2` | 17.11.2026 19:46 | Nihai eğitim ve kilitli tahmin kodu |
 | `cb19a1c` | 18.11.2026 10:57 | Etiketsiz `test_predictions_locked.csv` (824 satır; 3 MLP seed'i + LogisticRegression için olasılık ve sınıf tahmini), manifest (sha256 `0acd5903…b451d1`), modeller |
 | `50b5b02` | 18.11.2026 11:28 | Test metrikleri (yalnızca kilit commit'i doğrulandıktan sonra) |
+
+**Şekil 5b.** Dış CV AP: kat bazlı değerler ve ortalama ± SD. `figures/outer_cv_ap.png`
+
+**Tablo 8b.** Eşleştirilmiş bootstrap farkı (MLP − LogisticRegression; aynı 1.000 yeniden örneklem). Kaynak: `results/test_bootstrap_diff.csv`.
+
+| Metrik | Fark | %95 GA | Fark ≤ 0 olan örneklem oranı |
+|---|---|---|---|
+| AP | +0,016 | [−0,014; +0,041] | 0,19 |
+| ROC-AUC | +0,007 | [−0,009; +0,022] | 0,18 |
+| F1 | −0,013 | [−0,062; +0,031] | 0,74 |
+
+**Tablo 10.** Test kümesindeki gerçek pozitifler içinde `poutcome` ve `contact` gruplarına göre kaçırılma (FN) oranı.
+
+| Grup | Pozitif sayısı | FN | FN oranı |
+|---|---|---|---|
+| poutcome = success | 22 | 2 | %9 |
+| poutcome = failure | 17 | 17 | %100 |
+| poutcome = nonexistent | 51 | 51 | %100 |
+| contact = cellular | 74 | 55 | %74 |
+| contact = telephone | 16 | 15 | %94 |
+
+**Tablo 11.** Aynı yöntemin üç farklı değerlendirme düzeyinde AP değeri.
+
+| Düzey | Manuel arama / M2 | LogisticRegression |
+|---|---|---|
+| Development iç CV (seçim skoru, M2) | 0,441 ± 0,046 | – |
+| Dış CV (n = 3, Mean ± SD) | 0,429 ± 0,055 | 0,420 ± 0,028 |
+| Bağımsız test [%95 GA] | 0,406 [0,313; 0,519] | 0,390 [0,300; 0,509] |

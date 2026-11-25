@@ -26,6 +26,7 @@ BROWSERS = [
 ]
 
 WIDE = ("flow", "categorical", "training_curves", "search_comparison")
+STACK = ("numeric_hist", "numeric_box")   # alt alta yerleştirilen şekil çiftleri
 CSS = """
 @page { size: A4; margin: 15mm 15mm 16mm 15mm;
         @bottom-center { content: counter(page); font: 9pt 'Segoe UI', Arial, sans-serif; color: #555; } }
@@ -44,7 +45,10 @@ figure { margin: 4pt 0 2pt; text-align: center; break-inside: avoid; }
 figure img { max-width: 100%; max-height: 54mm; }
 figure.multi img { max-width: 49%; max-height: 70mm; }
 figure.wide img { max-height: 68mm; }
+figure.stack img { display: block; margin: 0 auto 2pt; max-width: 88%; max-height: 62mm; }
 hr { display: none; }
+p:has(+ table) { break-after: avoid; }
+ol li { text-align: left; }
 .cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; text-align: center;
          break-after: page; }
 .cover h1 { font-size: 20pt; }
@@ -70,12 +74,16 @@ def embed_figures(md_text):
     """Şekil başlığı satırlarının altına, satırda anılan figures/*.png dosyalarını ekler."""
     out = []
     for line in md_text.splitlines():
+        if line.startswith("|"):                      # tablo hücrelerinde "a ± b" satır sonunda bölünmesin
+            line = line.replace(" ± ", " ± ")
         out.append(line)
         if line.startswith("**Şekil"):
             figs = re.findall(r"`(figures/[\w\-]+\.png)`", line)
             if figs:
                 out[-1] = re.sub(r"\s*`figures/[\w\-]+\.png`(,\s*)?", " ", line).rstrip()
                 cls = "multi" if len(figs) > 1 else ("wide" if any(k in figs[0] for k in WIDE) else "")
+                if any(k in f for f in figs for k in STACK):
+                    cls = "stack"
                 imgs = "".join(img_tag(f) for f in figs)
                 out[-1] = f'<figure class="{cls}">{imgs}</figure>\n\n' + out[-1]
     return "\n".join(out)
